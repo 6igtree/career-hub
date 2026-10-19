@@ -66,13 +66,19 @@ async function deliver(pdf: Uint8Array, name: string) {
   download(file, name);
 }
 
+/** プレビューを出すまでの表示。フォントを読み込み終えたら、PDF を作っている段階の案内に変える */
 function PreviewLoading({ progress }: { progress: number }) {
   return (
-    <div className="flex flex-col gap-3">
+    // 案内は枠の中央に置く（枠の下だと、スマホでは画面下のボタンに隠れる）
+    <div className="relative">
       <Skeleton className="aspect-[595/842] w-full rounded-sm" />
-      <p className="text-center text-xs text-muted-foreground">
-        PDF 用のフォントを読み込んでいます… {Math.round(progress * 100)}%（初回のみ約 7.8MB）
-      </p>
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center" role="status">
+        <Loader2 className="size-8 animate-spin text-primary" aria-hidden />
+        <p className="text-sm text-muted-foreground">
+          {progress < 1 ? `PDF 用のフォントを読み込んでいます… ${Math.round(progress * 100)}%` : "プレビューを作っています…"}
+        </p>
+        {progress < 1 && <p className="text-xs text-muted-foreground">初回のみ約 7.8MB を読み込みます</p>}
+      </div>
     </div>
   );
 }
@@ -294,7 +300,7 @@ function Editor({ id }: { id: string }) {
       {/* スマホ：画面下に固定する操作バー */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/90 backdrop-blur-md lg:hidden">
         <div className="mx-auto flex max-w-xl gap-2 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <Button variant="outline" className="h-12 flex-1 text-base" disabled={!assets} onClick={() => setPreviewOpen(true)}>
+          <Button variant="outline" className="h-12 flex-1 text-base" onClick={() => setPreviewOpen(true)}>
             <Eye data-icon="inline-start" />
             プレビュー
           </Button>
@@ -313,7 +319,7 @@ function Editor({ id }: { id: string }) {
               <DrawerDescription>{busy ? "更新中…" : "A4・2枚。保存すると、ファイルへの保存や LINE・メールでの送信を選べます"}</DrawerDescription>
             </DrawerHeader>
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-              {preview ? <PdfPreview bytes={preview.bytes} /> : <PreviewLoading progress={progress} />}
+              <PdfPreview bytes={preview?.bytes ?? null} fallback={<PreviewLoading progress={progress} />} updating={busy} />
             </div>
             <DrawerFooter className="pt-3">
               <Button className="h-11" disabled={blocked} onClick={() => save("a4")}>
