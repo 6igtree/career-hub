@@ -1,0 +1,97 @@
+# 経歴データ。cp career.example.toml career.toml して編集する（career.toml は git 管理外）
+# 日付は "YYYY-MM"、作成日は "YYYY-MM-DD"。空欄にしたい項目は "" にする
+
+date = ""                  # 書類の日付（提出日）。空なら生成した日。年齢もこの日で計算する
+
+[profile]
+name = "山田 太郎"
+kana = "やまだ たろう"
+birth = "1995-04-01"
+gender = ""                # 任意。空なら欄ごと非表示
+photo = ""                 # 写真のパス（例: "photo.jpg"）。空なら枠だけ
+postal = "700-0000"
+address = "岡山県岡山市北区〇〇町1-2-3"
+address_kana = "おかやまけんおかやましきたく〇〇ちょう"
+phone = "090-0000-0000"
+email = "taro@example.com"   # 様式にメール欄がないので電話欄の下に入る
+
+# 連絡先欄。様式の指示どおり、現住所以外に連絡を希望する場合だけ書く
+# [contact]
+# postal = ""
+# address = ""
+# address_kana = ""
+# phone = ""
+# email = ""
+
+[[education]]
+date = "2011-04"
+text = "〇〇県立〇〇高等学校 入学"
+
+[[education]]
+date = "2014-03"
+text = "〇〇県立〇〇高等学校 卒業"
+
+[[education]]
+date = "2014-04"
+text = "〇〇大学 工学部 情報工学科 入学"
+
+[[education]]
+date = "2018-03"
+text = "〇〇大学 工学部 情報工学科 卒業"
+
+[[licenses]]
+date = "2015-08"
+text = "普通自動車第一種運転免許 取得"
+
+[[licenses]]
+date = "2019-04"
+text = "基本情報技術者試験 合格"
+
+[resume]
+motivation = """
+志望動機・自己PRをここに書く。
+改行はそのまま反映される。
+"""
+request = "貴社規定に従います。"
+
+# ---- 職務経歴書 ----
+
+[cv]
+summary = """
+職務要約。これまでの経歴を3〜5行でまとめる。
+"""
+skills = ["Go / TypeScript を用いた Web アプリケーション開発", "要件定義から運用までの一貫した経験"]
+pr = """
+自己PRをここに書く。
+"""
+
+[[cv.tech]]
+category = "言語"
+items = "Go, TypeScript, Python"
+
+[[cv.tech]]
+category = "インフラ"
+items = "AWS, Docker"
+
+# 職歴。履歴書の「職歴」欄にも入社・退社として自動で載る
+[[jobs]]
+company = "株式会社〇〇"
+from = "2018-04"
+to = ""                    # 空なら「現在」（在職中）
+business = "Web サービスの開発・運営"
+employees = "300名"
+role = "ソフトウェアエンジニア"
+leave_reason = "一身上の都合により退社"   # 退社時のみ使う
+
+[[jobs.projects]]
+title = "〇〇サービスの決済基盤リニューアル"
+from = "2021-04"
+to = "2023-03"
+role = "バックエンドリード"
+team = "6名"
+detail = """
+- 決済 API の設計・実装
+- 既存システムからの段階移行
+"""
+result = "障害件数を年12件から2件に削減"
+tech = "Go, PostgreSQL, AWS"

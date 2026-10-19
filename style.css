@@ -1,0 +1,40 @@
+@page { size: A4; margin: 14mm 16mm; }
+body { font-family: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "BIZ UDMincho", "Noto Serif CJK JP", "IPAexMincho", serif; font-size: 10pt; line-height: 1.55; color: #000; margin: 0; }
+h1 { font-size: 18pt; letter-spacing: .3em; margin: 0; font-weight: normal; }
+h2 { font-size: 11.5pt; border-bottom: 1.5px solid #000; margin: 16px 0 6px; padding-bottom: 2px; }
+h3 { font-size: 10.5pt; margin: 10px 0 2px; }
+p, ul { margin: 4px 0; }
+.c { text-align: center; } .r { text-align: right; }
+
+.grid { width: 100%; border-collapse: collapse; margin-top: 6px; }
+.grid td, .grid th { border: 1px solid #000; padding: 3px 6px; vertical-align: top; }
+.grid th { font-weight: normal; background: #f3f3f3; }
+.lbl { width: 5.5em; white-space: nowrap; font-size: 9pt; }
+
+/* 履歴書（厚生労働省様式の上に記入内容を重ねる） */
+@page a4 { size: A4; margin: 0; }
+@page a3 { size: A3 landscape; margin: 0; }
+.sheet { position: relative; overflow: hidden; break-after: page; }
+.sheet:last-of-type { break-after: auto; }
+.sheet.a4 { page: a4; width: 210mm; height: 297mm; }
+.sheet.a3 { page: a3; width: 420mm; height: 297mm; }
+/* Chrome は PDF 化のとき A4 を 99.9907%、A3 を 99.9263% に縮める（Chrome 155 で実測）。先に拡大して打ち消す。
+   ずれたら python3 check_form.py で測り直す */
+.cal { position: absolute; inset: 0; transform-origin: 0 0; }
+.a4 .cal { transform: scale(1.000093); }
+.a3 .cal { transform: translateY(-0.2717pt) scale(1.000737); }
+.cal > img, .ov { position: absolute; top: 0; left: 0; }
+.ov { width: 1190.55pt; height: 841.89pt; }
+.f { position: absolute; display: flex; align-items: safe center; overflow: hidden; line-height: 1.3; }
+.f > div { white-space: nowrap; }
+.f.c { justify-content: safe center; }
+.f.r { justify-content: safe flex-end; }
+.f.w > div { width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; }
+.f.top { align-items: flex-start; }
+.photo { position: absolute; left: 438.91pt; top: 78.79pt; width: 85.53pt; height: 109.64pt; object-fit: cover; }
+
+/* 職務経歴書 */
+.meta { font-size: 9pt; color: #333; }
+.res { margin-top: 2px; }
+.cvt .per { width: 9.5em; font-size: 9pt; white-space: nowrap; }
+.cvt tr { page-break-inside: avoid; }
