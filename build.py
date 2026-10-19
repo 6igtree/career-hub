@@ -4,6 +4,7 @@
 """
 import datetime
 import html
+import json
 import os
 import re
 import shutil
@@ -20,18 +21,14 @@ CHROMES = [  # 環境変数 CHROME があればそちらを使う
 ]
 FORM = ROOT / "form"  # 厚生労働省履歴書様式例の公式 PDF を SVG にしたもの（README 参照）
 
-# 様式の罫線位置（pt、A3 版の左上が原点）。公式 PDF の罫線から実測した値
-HIST_L = [390.44, 416.11, 441.78, 467.45, 493.24, 519.03, 544.70, 570.37,
-          596.16, 621.95, 647.62, 673.41, 699.20, 724.99, 750.78, 776.57]
-HIST_R = [100.51, 126.30, 152.09, 177.88, 203.67, 229.46, 255.25, 280.92]
-LICENSES = [302.51, 328.18, 353.97, 379.64, 405.31, 430.98, 456.65]
-COLS_L = (67.41, 122.65, 148.86, 555.15)  # 年 | 月 | 内容 | 右端
-COLS_R = (648.96, 704.19, 730.40, 1136.69)
-REQUEST_ROWS, REQUEST_ROW_H = 4, 25.79
-CONTACT_DY = 64.2  # 現住所欄から連絡先欄までの距離
-PHOTO_MAX = 1200  # 写真の長辺（px）の上限。写真欄の高さ 38.7mm に対して約 790dpi あれば十分
+# 文字を置く位置（pt、A3 版の左上が原点）。ブラウザ版と共通
+LAYOUT = json.loads((FORM / "layout.json").read_text(encoding="utf-8"))
+HIST_L, HIST_R = LAYOUT["history"]["left"], LAYOUT["history"]["right"]
+LICENSES = LAYOUT["licenses"]
+COLS_L, COLS_R = LAYOUT["columns"]["left"], LAYOUT["columns"]["right"]
 # A4 版の各ページは A3 版の左右半分と同じ配置（縦のずれ 0.3pt 以内）なので、横にずらして使う
-A4_SHIFT = (-14.19, -595.73)
+A4_SHIFT = LAYOUT["a4Shift"]
+PHOTO_MAX = 1200  # 写真の長辺（px）の上限。写真欄の高さ 38.7mm に対して約 790dpi あれば十分
 
 # 欄からはみ出す文字を、収まるまで縮める
 FIT_JS = """<script>
@@ -85,14 +82,25 @@ def box(x0, y0, x1, y1, text, size=11, cls="", style=""):
             f'height:{y1 - y0:.2f}pt;font-size:{size}pt;{style}"><div>{text}</div></div>')
 
 
+def field(name, text, dy=0):
+    """layout.json の欄 name に文字を置く。dy は縦にずらす量（連絡先欄で使う）"""
+    f = LAYOUT["fields"][name]
+    x0, y0, x1, y1 = f["box"]
+    cls = " ".join(c for c in (f.get("align"), f.get("wrap") and "w", f.get("top") and "top") if c)
+    style = (f"line-height:{f['lineHeight']}" if "lineHeight" in f
+             else f"line-height:{f['lineHeightPt']}pt" if "lineHeightPt" in f else "")
+    return box(x0, y0 + dy, x1, y1 + dy, text, size=f.get("size", 11), cls=cls, style=style)
+
+
 def rows(items, lines, cols):
     """(年月, 内容, 寄せ) を罫線 lines の各行に1件ずつ置く"""
     cy, cm, ct, cr = cols
+    pad_l, pad_r = LAYOUT["rowPadding"]
     out = []
     for (date, text, align), y0, y1 in zip(items, lines, lines[1:]):
         y, m = ym(date)
         out += [box(cy, y0, cm, y1, y, cls="c"), box(cm, y0, ct, y1, m, cls="c"),
-                box(ct + 8, y0, cr - 12, y1, e(text), cls=align)]
+                box(ct + pad_l, y0, cr - pad_r, y1, e(text), cls=align)]
     return out
 
 
@@ -113,26 +121,28 @@ def rirekisho(d, today):
     p, r = d["profile"], d.get("resume", {})
     by, bm, bd = p["birth"].split("-")
     left = [
-        box(280, 88.8, 319.7, 99.84, today.year, cls="r"),
-        box(332.28, 88.8, 353.64, 99.84, today.month, cls="c"),
-        box(364.68, 88.8, 386.04, 99.84, today.day, cls="c"),
-        box(130, 110.7, 390, 126.36, e(p["kana"]), size=10),
-        box(130, 138, 390, 203.67, e(p["name"]), size=24),
-        box(120, 210.6, 170.3, 221.64, by, cls="r"),
-        box(182.88, 210.6, 216.0, 221.64, int(bm), cls="c"),
-        box(227.04, 210.6, 260.16, 221.64, int(bd), cls="c"),
-        box(326.4, 210.6, 348.48, 221.64, age(p["birth"], today), cls="c"),
-        box(430, 203.67, 555.15, 229.46, e(p.get("gender")), cls="c"),
+        field("dateYear", today.year),
+        field("dateMonth", today.month),
+        field("dateDay", today.day),
+        field("kana", e(p["kana"])),
+        field("name", e(p["name"])),
+        field("birthYear", by),
+        field("birthMonth", int(bm)),
+        field("birthDay", int(bd)),
+        field("age", age(p["birth"], today)),
+        field("gender", e(p.get("gender"))),
     ]
     if p.get("photo"):
-        left.append(f'<img class="photo" src="{(ROOT / p["photo"]).resolve().as_uri()}">')
-    for dy, a in ((0, p), (CONTACT_DY, d.get("contact", {}))):
+        x0, y0, x1, y1 = LAYOUT["photo"]
+        left.append(f'<img class="photo" src="{(ROOT / p["photo"]).resolve().as_uri()}" '
+                    f'style="left:{x0}pt;top:{y0}pt;width:{x1 - x0:.2f}pt;height:{y1 - y0:.2f}pt">')
+    for dy, a in ((0, p), (LAYOUT["contactOffset"], d.get("contact", {}))):
         left += [
-            box(130, 229.46 + dy, 452, 245.11 + dy, e(a.get("address_kana")), size=9),
-            box(132, 246.6 + dy, 265, 257.64 + dy, e(a.get("postal"))),
-            box(130, 258 + dy, 452, 293.75 + dy, e(a.get("address")), size=12, cls="w"),
-            box(460, 245 + dy, 552, 263 + dy, e(a.get("phone"))),
-            box(460, 263 + dy, 552, 292 + dy, e(a.get("email")).replace("@", "<wbr>@"), size=9, cls="w"),
+            field("addressKana", e(a.get("address_kana")), dy),
+            field("postal", e(a.get("postal")), dy),
+            field("address", e(a.get("address")), dy),
+            field("phone", e(a.get("phone")), dy),
+            field("email", e(a.get("email")).replace("@", "<wbr>@"), dy),
         ]
 
     hist, lic = history(d), [(x["date"], x["text"], "") for x in d.get("licenses", [])]
@@ -142,12 +152,10 @@ def rirekisho(d, today):
     left += rows(hist[:n], HIST_L, COLS_L)
 
     request = str(r.get("request") or "").strip()
-    limit(len(request.splitlines()), REQUEST_ROWS, "本人希望記入欄")
+    limit(len(request.splitlines()), LAYOUT["fields"]["request"]["rows"], "本人希望記入欄")
     right = rows(hist[n:], HIST_R, COLS_R) + rows(lic, LICENSES, COLS_R) + [
-        box(656, 491, 1130, 638, e(str(r.get("motivation") or "").strip()), size=10.5,
-            cls="w top", style="line-height:1.6"),
-        box(656, 673.41, 1130, 673.41 + REQUEST_ROWS * REQUEST_ROW_H, e(request), size=10.5,
-            cls="w top", style=f"line-height:{REQUEST_ROW_H}pt"),
+        field("motivation", e(str(r.get("motivation") or "").strip())),
+        field("request", e(request)),
     ]
     return "\n".join(left), "\n".join(right)
 

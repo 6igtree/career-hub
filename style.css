@@ -31,7 +31,7 @@ p, ul { margin: 4px 0; }
 .f.r { justify-content: safe flex-end; }
 .f.w > div { width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; }
 .f.top { align-items: flex-start; }
-.photo { position: absolute; left: 438.91pt; top: 78.79pt; width: 85.53pt; height: 109.64pt; object-fit: cover; }
+.photo { position: absolute; object-fit: cover; }
 
 /* 職務経歴書 */
 .meta { font-size: 9pt; color: #333; }
