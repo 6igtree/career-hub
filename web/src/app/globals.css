@@ -129,3 +129,10 @@
     @apply font-sans;
   }
 }
+
+/* 上の進み具合から各欄へ移るときは滑らかに動かす（動きを減らす設定の人には動かさない） */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}

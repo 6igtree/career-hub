@@ -2,6 +2,7 @@
 
 import { useId } from "react";
 import { ChevronDown, ChevronUp, Mail, Phone, Plus, Trash2 } from "lucide-react";
+import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DateField } from "@/components/date-field";
 import { GenderField } from "@/components/gender-field";
 import { PhotoField } from "@/components/photo-field";
+import { SectionNumber, type SectionId } from "@/components/section-nav";
 import { YearMonth } from "@/components/year-month";
 import { blankEntry, blankJob, type Address, type Counts, type Layout } from "@/lib/resume";
 import { updateResume, useResume } from "@/lib/store";
@@ -41,6 +43,47 @@ function TextField({ label, description, addon, className, onChange, ...props }:
       {description && <FieldDescription>{description}</FieldDescription>}
     </Field>
   );
+}
+
+function SectionHeader({ n, done, title, description, action }: {
+  n: number;
+  done: boolean;
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <CardHeader className="border-b">
+      <CardTitle className="flex items-center gap-2.5 text-base font-semibold">
+        <SectionNumber n={n} done={done} />
+        {title}
+      </CardTitle>
+      {description && <CardDescription className="pl-[34px]">{description}</CardDescription>}
+      {action && <CardAction>{action}</CardAction>}
+    </CardHeader>
+  );
+}
+
+/** 学歴・職歴・資格を、縦の線と点でつないだ年表のように並べる */
+function Timeline({ children }: { children: React.ReactNode }) {
+  return (
+    <ol className="relative flex flex-col gap-4 before:absolute before:top-3 before:bottom-3 before:left-[7px] before:w-px before:bg-border sm:gap-3">
+      {children}
+    </ol>
+  );
+}
+
+function TimelineItem({ children, dotClassName }: { children: React.ReactNode; dotClassName?: string }) {
+  return (
+    <li className="relative pl-7">
+      <span aria-hidden className={cn("absolute left-0 size-[15px] rounded-full border-2 border-primary/60 bg-card", dotClassName ?? "top-[9px]")} />
+      {children}
+    </li>
+  );
+}
+
+function EmptyList({ children }: { children: React.ReactNode }) {
+  return <p className="rounded-lg border border-dashed px-4 py-5 text-center text-sm text-muted-foreground">{children}</p>;
 }
 
 function CountBadge({ n, max }: { n: number; max: number }) {
@@ -120,29 +163,34 @@ function EntryList({ list, label, placeholder }: { list: "education" | "licenses
   const items = useResume()[list];
   return (
     <div className="flex flex-col gap-3">
-      {items.map((item, i) => (
-        <div
-          key={i}
-          className="grid grid-cols-[1fr_auto] items-center gap-2 rounded-lg border p-3 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:rounded-none sm:border-0 sm:p-0"
-        >
-          <YearMonth label={`${label}${i + 1}`} value={item.date} onChange={(v) => updateResume((r) => void (r[list][i].date = v))} />
-          {/* スマホでは年月と操作ボタンを1行目に並べ、内容は2行目に置く */}
-          <Input
-            className="order-last col-span-2 sm:order-none sm:col-span-1"
-            aria-label={`${label}${i + 1}の内容`}
-            value={item.text}
-            placeholder={placeholder}
-            onChange={(e) => updateResume((r) => void (r[list][i].text = e.target.value))}
-          />
-          <RowActions
-            label={`${label}${i + 1}`}
-            index={i}
-            count={items.length}
-            onMove={(to) => updateResume((r) => move(r[list], i, to))}
-            onRemove={() => updateResume((r) => void r[list].splice(i, 1))}
-          />
-        </div>
-      ))}
+      {items.length === 0 ? (
+        <EmptyList>まだありません。下のボタンから追加できます</EmptyList>
+      ) : (
+        <Timeline>
+          {items.map((item, i) => (
+            <TimelineItem key={i}>
+              <div className="grid grid-cols-[1fr_auto] items-center gap-2 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
+                <YearMonth label={`${label}${i + 1}`} value={item.date} onChange={(v) => updateResume((r) => void (r[list][i].date = v))} />
+                {/* スマホでは年月と操作ボタンを1行目に並べ、内容は2行目に置く */}
+                <Input
+                  className="order-last col-span-2 sm:order-none sm:col-span-1"
+                  aria-label={`${label}${i + 1}の内容`}
+                  value={item.text}
+                  placeholder={placeholder}
+                  onChange={(e) => updateResume((r) => void (r[list][i].text = e.target.value))}
+                />
+                <RowActions
+                  label={`${label}${i + 1}`}
+                  index={i}
+                  count={items.length}
+                  onMove={(to) => updateResume((r) => move(r[list], i, to))}
+                  onRemove={() => updateResume((r) => void r[list].splice(i, 1))}
+                />
+              </div>
+            </TimelineItem>
+          ))}
+        </Timeline>
+      )}
       <Button type="button" variant="outline" size="sm" className="self-start" onClick={() => updateResume((r) => void r[list].push(blankEntry()))}>
         <Plus data-icon="inline-start" />
         {label}を追加
@@ -156,32 +204,40 @@ function JobList() {
   const set = (i: number, key: "company" | "from" | "to" | "leave_reason", v: string) => updateResume((r) => void (r.jobs[i][key] = v));
   return (
     <div className="flex flex-col gap-3">
-      {jobs.map((job, i) => (
-        <div key={i} className="flex flex-col gap-3 rounded-lg border p-3">
-          <div className="flex items-center gap-2">
-            <Input aria-label={`職歴${i + 1}の会社名`} placeholder="株式会社〇〇" value={job.company} onChange={(e) => set(i, "company", e.target.value)} />
-            <RowActions
-              label={`職歴${i + 1}`}
-              index={i}
-              count={jobs.length}
-              onMove={(to) => updateResume((r) => move(r.jobs, i, to))}
-              onRemove={() => updateResume((r) => void r.jobs.splice(i, 1))}
-            />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field>
-              <FieldTitle>入社</FieldTitle>
-              <YearMonth label={`職歴${i + 1}の入社`} value={job.from} onChange={(v) => set(i, "from", v)} />
-            </Field>
-            <Field>
-              <FieldTitle>退社</FieldTitle>
-              <YearMonth label={`職歴${i + 1}の退社`} value={job.to} onChange={(v) => set(i, "to", v)} />
-              {!job.to && <FieldDescription>在職中は空けておくと「現在に至る」と入ります</FieldDescription>}
-            </Field>
-          </div>
-          {job.to && <TextField label="退社理由" value={job.leave_reason} onChange={(v) => set(i, "leave_reason", v)} placeholder="一身上の都合により退社" />}
-        </div>
-      ))}
+      {jobs.length === 0 ? (
+        <EmptyList>まだありません。職歴がない場合は空けておいて大丈夫です</EmptyList>
+      ) : (
+        <Timeline>
+          {jobs.map((job, i) => (
+            <TimelineItem key={i} dotClassName="top-[22px]">
+              <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3">
+                <div className="flex items-center gap-2">
+                  <Input aria-label={`職歴${i + 1}の会社名`} placeholder="株式会社〇〇" value={job.company} onChange={(e) => set(i, "company", e.target.value)} />
+                  <RowActions
+                    label={`職歴${i + 1}`}
+                    index={i}
+                    count={jobs.length}
+                    onMove={(to) => updateResume((r) => move(r.jobs, i, to))}
+                    onRemove={() => updateResume((r) => void r.jobs.splice(i, 1))}
+                  />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field>
+                    <FieldTitle>入社</FieldTitle>
+                    <YearMonth label={`職歴${i + 1}の入社`} value={job.from} onChange={(v) => set(i, "from", v)} />
+                  </Field>
+                  <Field>
+                    <FieldTitle>退社</FieldTitle>
+                    <YearMonth label={`職歴${i + 1}の退社`} value={job.to} onChange={(v) => set(i, "to", v)} />
+                    {!job.to && <FieldDescription>在職中は空けておくと「現在に至る」と入ります</FieldDescription>}
+                  </Field>
+                </div>
+                {job.to && <TextField label="退社理由" value={job.leave_reason} onChange={(v) => set(i, "leave_reason", v)} placeholder="一身上の都合により退社" />}
+              </div>
+            </TimelineItem>
+          ))}
+        </Timeline>
+      )}
       <Button type="button" variant="outline" size="sm" className="self-start" onClick={() => updateResume((r) => void r.jobs.push(blankJob()))}>
         <Plus data-icon="inline-start" />
         職歴を追加
@@ -190,7 +246,11 @@ function JobList() {
   );
 }
 
-export function ResumeForm({ counts, layout }: { counts: Counts | null; layout: Layout | null }) {
+export function ResumeForm({ counts, layout, status }: {
+  counts: Counts | null;
+  layout: Layout | null;
+  status: Record<SectionId, boolean>;
+}) {
   const resume = useResume();
   const p = resume.profile;
   const setProfile = (key: keyof typeof p, v: string) => updateResume((r) => void (r.profile[key] = v));
@@ -202,10 +262,8 @@ export function ResumeForm({ counts, layout }: { counts: Counts | null; layout: 
 
   return (
     <div className="flex flex-col gap-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>基本情報</CardTitle>
-        </CardHeader>
+      <Card id="basic" className="scroll-mt-32">
+        <SectionHeader n={1} done={status.basic} title="基本情報" />
         <CardContent className="flex flex-col gap-5">
           <FieldGroup className="grid gap-4 sm:grid-cols-2">
             <TextField label="氏名" value={p.name} onChange={(v) => setProfile("name", v)} placeholder="山田 太郎" autoComplete="name" />
@@ -243,10 +301,8 @@ export function ResumeForm({ counts, layout }: { counts: Counts | null; layout: 
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>現住所</CardTitle>
-        </CardHeader>
+      <Card id="address" className="scroll-mt-32">
+        <SectionHeader n={2} done={status.address} title="現住所" />
         <CardContent className="flex flex-col gap-5">
           <AddressFields value={p} onChange={setProfile} autofill />
           <Collapsible className="rounded-lg border">
@@ -261,16 +317,14 @@ export function ResumeForm({ counts, layout }: { counts: Counts | null; layout: 
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>学歴・職歴</CardTitle>
-          <CardDescription>「学歴」「職歴」の見出しと最後の「以上」も1行ずつ使います</CardDescription>
-          {counts && (
-            <CardAction>
-              <CountBadge n={counts.hist} max={counts.maxHist} />
-            </CardAction>
-          )}
-        </CardHeader>
+      <Card id="history" className="scroll-mt-32">
+        <SectionHeader
+          n={3}
+          done={status.history}
+          title="学歴・職歴"
+          description="古い順に。「学歴」「職歴」の見出しと最後の「以上」も1行ずつ使います"
+          action={counts && <CountBadge n={counts.hist} max={counts.maxHist} />}
+        />
         <CardContent className="flex flex-col gap-5">
           <section className="flex flex-col gap-3">
             <h3 className="text-sm font-medium">学歴</h3>
@@ -284,24 +338,21 @@ export function ResumeForm({ counts, layout }: { counts: Counts | null; layout: 
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>免許・資格</CardTitle>
-          {counts && (
-            <CardAction>
-              <CountBadge n={counts.lic} max={counts.maxLic} />
-            </CardAction>
-          )}
-        </CardHeader>
+      <Card id="licenses" className="scroll-mt-32">
+        <SectionHeader
+          n={4}
+          done={status.licenses}
+          title="免許・資格"
+          description="取った順に。なければ空けておけます"
+          action={counts && <CountBadge n={counts.lic} max={counts.maxLic} />}
+        />
         <CardContent>
           <EntryList list="licenses" label="免許・資格" placeholder="普通自動車第一種運転免許 取得" />
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>志望動機・本人希望</CardTitle>
-        </CardHeader>
+      <Card id="motivation" className="scroll-mt-32">
+        <SectionHeader n={5} done={status.motivation} title="志望動機・本人希望" />
         <CardContent className="flex flex-col gap-5">
           <Field>
             <FieldLabel htmlFor={motivationId}>志望の動機、特技、好きな学科、アピールポイントなど</FieldLabel>

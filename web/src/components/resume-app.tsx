@@ -1,7 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { ChevronDown, Download, Eye, FileText, FolderOpen, Info, Loader2, MoreHorizontal, Sparkles, Trash2, TriangleAlert, Upload } from "lucide-react";
+import {
+  BadgeCheck,
+  Check,
+  ChevronDown,
+  Download,
+  Eye,
+  FileText,
+  FolderOpen,
+  Info,
+  Loader2,
+  MoreHorizontal,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+  TriangleAlert,
+  Upload,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -14,13 +30,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/button-group";
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PdfFrame, PdfPreview } from "@/components/pdf-preview";
 import { ResumeForm } from "@/components/resume-form";
+import { SectionNav, sectionStatus } from "@/components/section-nav";
 import { documentDate, emptyResume, layoutResume, loadAssets, makePdf, missingChars, SAMPLE, toResume, type Assets, type Resume } from "@/lib/resume";
 import { setResume, useResume } from "@/lib/store";
 
@@ -89,6 +106,7 @@ export function ResumeApp() {
 
   const check = useMemo(() => (assets ? layoutResume(resume, assets.layout, documentDate(resume)) : null), [resume, assets]);
   const missing = useMemo(() => (assets ? missingChars(resume, assets.charset) : []), [resume, assets]);
+  const sections = useMemo(() => sectionStatus(resume), [resume]);
   const showPreview = isDesktop || previewOpen;
   const blocked = !assets || !check || check.errors.length > 0;
   const isEmpty = !resume.profile.name && !resume.education.length && !resume.jobs.length && !resume.licenses.length;
@@ -151,11 +169,15 @@ export function ResumeApp() {
               <FileText className="size-4" aria-hidden />
             </span>
             <div className="min-w-0 leading-tight">
-              <h1 className="truncate text-sm font-semibold">career-hub</h1>
-              <p className="truncate text-xs text-muted-foreground">厚生労働省様式の履歴書をつくる</p>
+              <p className="truncate text-sm font-semibold">履歴書をつくる</p>
+              <p className="truncate text-xs text-muted-foreground">厚生労働省様式 ・ career-hub</p>
             </div>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <span className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
+              <Check className="size-3.5 text-primary" aria-hidden />
+              この端末に自動保存
+            </span>
             <DropdownMenu>
               <DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="メニュー" />}>
                 <MoreHorizontal />
@@ -204,9 +226,36 @@ export function ResumeApp() {
 
       <main className="mx-auto grid w-full max-w-7xl flex-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div className="flex min-w-0 flex-col gap-4">
-          <p className="text-sm text-muted-foreground">
-            厚生労働省履歴書様式例の公式 PDF に、入力した内容をそのまま書き込みます。入力内容はこのブラウザの中だけに保存され、どこにも送信されません。
-          </p>
+          <section className="flex flex-col gap-3 pt-1">
+            <h1 className="text-xl font-bold tracking-tight text-balance sm:text-2xl">厚生労働省様式の履歴書を、そのまま PDF に</h1>
+            <p className="text-sm text-muted-foreground">入力するだけで、厚生労働省の公式 PDF に書き込んだ履歴書ができあがります。</p>
+            <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+              <li className="flex items-center gap-1.5">
+                <BadgeCheck className="size-4 text-primary" aria-hidden />
+                公式の様式をそのまま使用
+              </li>
+              <li className="flex items-center gap-1.5">
+                <ShieldCheck className="size-4 text-primary" aria-hidden />
+                入力内容はこの端末の外に送信しません
+              </li>
+              <li className="flex items-center gap-1.5">
+                <Sparkles className="size-4 text-primary" aria-hidden />
+                無料・登録不要
+              </li>
+            </ul>
+            {isEmpty && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Button onClick={() => setResume(structuredClone(SAMPLE))}>
+                  <Sparkles data-icon="inline-start" />
+                  見本を入れて試す
+                </Button>
+                <a href="#basic" className={buttonVariants({ variant: "outline", className: "bg-card" })}>
+                  自分の内容で始める
+                </a>
+              </div>
+            )}
+          </section>
+          <SectionNav status={sections} />
           {loadError && (
             <Alert variant="destructive">
               <TriangleAlert />
@@ -235,19 +284,7 @@ export function ResumeApp() {
               <AlertDescription>この文字は PDF では表示されません：{missing.join(" ")}</AlertDescription>
             </Alert>
           )}
-          {isEmpty && (
-            <Alert>
-              <Sparkles />
-              <AlertTitle>まずは見本で試せます</AlertTitle>
-              <AlertDescription>
-                <p>見本を入れると、仕上がりの PDF をすぐに確認できます。</p>
-                <Button size="sm" variant="outline" className="mt-2" onClick={() => setResume(structuredClone(SAMPLE))}>
-                  見本を入れる
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
-          <ResumeForm counts={check?.counts ?? null} layout={assets?.layout ?? null} />
+          <ResumeForm counts={check?.counts ?? null} layout={assets?.layout ?? null} status={sections} />
         </div>
 
         <aside className="hidden lg:block" aria-label="プレビュー">
