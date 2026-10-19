@@ -28,11 +28,20 @@ type TextFieldProps = Omit<React.ComponentProps<typeof Input>, "onChange"> & {
   label: string;
   description?: string;
   addon?: React.ReactNode; // 入力欄の先頭に置く記号やアイコン（〒 など）
+  format?: (value: string) => string; // 打った値を整える（郵便番号のハイフンなど）
   onChange: (value: string) => void;
 };
 
-function TextField({ label, description, addon, className, onChange, ...props }: TextFieldProps) {
+function TextField({ label, description, addon, format, className, onChange, ...props }: TextFieldProps) {
   const id = useId();
+  // 日本語入力で変換している途中に値を書き換えると変換が壊れるので、確定してから整える
+  const input = {
+    id,
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+      onChange(format && !(e.nativeEvent as InputEvent).isComposing ? format(e.target.value) : e.target.value),
+    onCompositionEnd: format && ((e: React.CompositionEvent<HTMLInputElement>) => onChange(format(e.currentTarget.value))),
+    ...props,
+  };
   return (
     <Field className={className}>
       <FieldLabel htmlFor={id} className={LABEL}>
@@ -41,14 +50,21 @@ function TextField({ label, description, addon, className, onChange, ...props }:
       {addon ? (
         <InputGroup>
           <InputGroupAddon>{addon}</InputGroupAddon>
-          <InputGroupInput id={id} onChange={(e) => onChange(e.target.value)} {...props} />
+          <InputGroupInput {...input} />
         </InputGroup>
       ) : (
-        <Input id={id} onChange={(e) => onChange(e.target.value)} {...props} />
+        <Input {...input} />
       )}
       {description && <FieldDescription>{description}</FieldDescription>}
     </Field>
   );
+}
+
+// 国内の郵便番号は必ず数字7桁（3桁-4桁）。7つそろったらハイフンを入れる。
+// 3桁の時点で入れないのは、海外の郵便番号（アメリカの5桁など）を崩さないため
+function formatPostal(v: string) {
+  const d = v.normalize("NFKC").replace(/[〒\s\-‐‑‒–—―−ー]/g, "");
+  return /^\d{7}$/.test(d) ? `${d.slice(0, 3)}-${d.slice(3)}` : v;
 }
 
 function AddressFields({ value, onChange, autofill }: { value: Address; onChange: (key: keyof Address, v: string) => void; autofill: boolean }) {
@@ -59,6 +75,7 @@ function AddressFields({ value, onChange, autofill }: { value: Address; onChange
         label="郵便番号"
         addon={<InputGroupText>〒</InputGroupText>}
         value={value.postal}
+        format={formatPostal}
         onChange={(v) => onChange("postal", v)}
         placeholder="700-0000"
         inputMode="numeric"
