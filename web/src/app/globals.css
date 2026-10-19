@@ -2,6 +2,8 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* ダークモードは使わない。部品に残っている dark: の指定が端末の設定で効いてしまわないよう、
+   .dark クラスが付いたときだけにしておく（.dark はどこにも付けない） */
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -49,25 +51,27 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* 色は1つだけ。紙の生成り、墨、印鑑の朱で、書類らしい見た目にする（文字のコントラスト比はどれも 4.5 以上） */
 :root {
-  --background: oklch(0.975 0.003 260);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.42 0.14 262);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  color-scheme: light;
+  --background: oklch(0.968 0.012 85); /* 生成り #f8f4ec */
+  --foreground: oklch(0.24 0.012 60); /* 墨 #241e1a */
+  --card: oklch(0.993 0.005 85);
+  --card-foreground: oklch(0.24 0.012 60);
+  --popover: oklch(0.993 0.005 85);
+  --popover-foreground: oklch(0.24 0.012 60);
+  --primary: oklch(0.55 0.17 33); /* 朱 #c03f26 */
+  --primary-foreground: oklch(0.985 0.008 85);
+  --secondary: oklch(0.945 0.012 85);
+  --secondary-foreground: oklch(0.24 0.012 60);
+  --muted: oklch(0.945 0.012 85);
+  --muted-foreground: oklch(0.5 0.016 70);
+  --accent: oklch(0.94 0.02 60);
+  --accent-foreground: oklch(0.24 0.012 60);
+  --destructive: oklch(0.5 0.19 22); /* 朱と見分けられるよう、青みの強い赤にする */
+  --border: oklch(0.89 0.013 80);
+  --input: oklch(0.84 0.015 75);
+  --ring: oklch(0.55 0.17 33);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -82,40 +86,6 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-}
-
-.dark {
-  --background: oklch(0.16 0.004 260);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0.005 260);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0.005 260);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.74 0.12 262);
-  --primary-foreground: oklch(0.18 0.03 262);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
 }
 
 @layer base {
