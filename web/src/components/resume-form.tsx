@@ -20,8 +20,7 @@ import { YearMonth } from "@/components/year-month";
 import { blankEntry, blankJob, byDate, formatYm, type Address, type Counts, type Layout, type Resume } from "@/lib/resume";
 import { updateResume, useResume } from "@/lib/store";
 
-// スマホでは文字を大きく、押しやすい高さにする
-const BIG = "h-11 text-base sm:h-9 sm:text-sm";
+// 入力欄の高さと文字サイズは components/ui 側でそろえている（スマホ 44px・16px／パソコン 36px・14px）
 const LABEL = "text-[15px] sm:text-sm";
 
 type TextFieldProps = Omit<React.ComponentProps<typeof Input>, "onChange"> & {
@@ -39,12 +38,12 @@ function TextField({ label, description, addon, className, onChange, ...props }:
         {label}
       </FieldLabel>
       {addon ? (
-        <InputGroup className={BIG}>
+        <InputGroup>
           <InputGroupAddon>{addon}</InputGroupAddon>
           <InputGroupInput id={id} onChange={(e) => onChange(e.target.value)} {...props} />
         </InputGroup>
       ) : (
-        <Input id={id} className={BIG} onChange={(e) => onChange(e.target.value)} {...props} />
+        <Input id={id} onChange={(e) => onChange(e.target.value)} {...props} />
       )}
       {description && <FieldDescription>{description}</FieldDescription>}
     </Field>
@@ -365,7 +364,7 @@ export function ResumeForm({ counts, layout }: { counts: Counts | null; layout: 
           <div className="flex flex-col gap-6 pt-1 pb-4">
             <AddressFields value={p} onChange={setProfile} autofill />
             <Collapsible className="rounded-lg border">
-              <CollapsibleTrigger className="group flex w-full items-center justify-between gap-2 px-3 py-3 text-left text-sm font-medium">
+              <CollapsibleTrigger className="group flex h-11 w-full items-center justify-between gap-2 px-3 text-left text-base font-medium sm:h-9 sm:text-sm">
                 現住所以外に連絡を希望する場合
                 <ChevronRight className="size-4 text-muted-foreground transition-transform group-data-[panel-open]:rotate-90" />
               </CollapsibleTrigger>
