@@ -105,6 +105,18 @@ export function ym(s: string): [string, string] {
   return m ? [m[1], String(Number(m[2]))] : ["", ""];
 }
 
+/** "2014-04" → "2014年4月"。年か月が欠けていれば空文字 */
+export function formatYm(s: string) {
+  const [y, m] = ym(s);
+  return y ? `${y}年${m}月` : "";
+}
+
+/** 年月の古い順に並べる。年月が欠けたものは最後。同じ年月どうしは元の順のまま */
+export function byDate<T>(list: T[], key: (item: T) => string) {
+  const k = (item: T) => (ym(key(item))[0] ? key(item) : "9999-99");
+  return [...list].sort((a, b) => k(a).localeCompare(k(b)));
+}
+
 export function documentDate(d: Resume): Date {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d.date || "");
   return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date();

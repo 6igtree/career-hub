@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  BadgeCheck,
   Check,
   ChevronDown,
   Download,
@@ -12,7 +11,6 @@ import {
   Info,
   Loader2,
   MoreHorizontal,
-  ShieldCheck,
   Sparkles,
   Trash2,
   TriangleAlert,
@@ -30,30 +28,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/button-group";
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIsDesktop } from "@/components/edit-sheet";
 import { PdfFrame, PdfPreview } from "@/components/pdf-preview";
 import { ResumeForm } from "@/components/resume-form";
-import { SectionNav, sectionStatus } from "@/components/section-nav";
 import { documentDate, emptyResume, layoutResume, loadAssets, makePdf, missingChars, SAMPLE, toResume, type Assets, type Resume } from "@/lib/resume";
 import { setResume, useResume } from "@/lib/store";
-
-const DESKTOP = "(min-width: 1024px)";
-
-function useIsDesktop() {
-  return useSyncExternalStore(
-    (onChange) => {
-      const mq = matchMedia(DESKTOP);
-      mq.addEventListener("change", onChange);
-      return () => mq.removeEventListener("change", onChange);
-    },
-    () => matchMedia(DESKTOP).matches,
-    () => false,
-  );
-}
 
 function download(blob: Blob, name: string) {
   const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: name });
@@ -106,7 +91,6 @@ export function ResumeApp() {
 
   const check = useMemo(() => (assets ? layoutResume(resume, assets.layout, documentDate(resume)) : null), [resume, assets]);
   const missing = useMemo(() => (assets ? missingChars(resume, assets.charset) : []), [resume, assets]);
-  const sections = useMemo(() => sectionStatus(resume), [resume]);
   const showPreview = isDesktop || previewOpen;
   const blocked = !assets || !check || check.errors.length > 0;
   const isEmpty = !resume.profile.name && !resume.education.length && !resume.jobs.length && !resume.licenses.length;
@@ -226,36 +210,25 @@ export function ResumeApp() {
 
       <main className="mx-auto grid w-full max-w-7xl flex-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div className="flex min-w-0 flex-col gap-4">
-          <section className="flex flex-col gap-3 pt-1">
-            <h1 className="text-xl font-bold tracking-tight text-balance sm:text-2xl">厚生労働省様式の履歴書を、そのまま PDF に</h1>
-            <p className="text-sm text-muted-foreground">入力するだけで、厚生労働省の公式 PDF に書き込んだ履歴書ができあがります。</p>
-            <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
-              <li className="flex items-center gap-1.5">
-                <BadgeCheck className="size-4 text-primary" aria-hidden />
-                公式の様式をそのまま使用
-              </li>
-              <li className="flex items-center gap-1.5">
-                <ShieldCheck className="size-4 text-primary" aria-hidden />
-                入力内容はこの端末の外に送信しません
-              </li>
-              <li className="flex items-center gap-1.5">
-                <Sparkles className="size-4 text-primary" aria-hidden />
-                無料・登録不要
-              </li>
-            </ul>
-            {isEmpty && (
-              <div className="flex flex-wrap gap-2 pt-1">
-                <Button onClick={() => setResume(structuredClone(SAMPLE))}>
+          {isEmpty && (
+            <Empty className="border bg-card">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <FileText />
+                </EmptyMedia>
+                <EmptyTitle className="text-lg">厚生労働省様式の履歴書を、そのまま PDF に</EmptyTitle>
+                <EmptyDescription>
+                  入力するだけで、公式の様式に書き込んだ履歴書ができます。無料・登録不要で、入力内容はこの端末の外に送信しません。
+                </EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                <Button className="h-11 px-5 text-base sm:h-9 sm:text-sm" onClick={() => setResume(structuredClone(SAMPLE))}>
                   <Sparkles data-icon="inline-start" />
-                  見本を入れて試す
+                  見本で試す
                 </Button>
-                <a href="#basic" className={buttonVariants({ variant: "outline", className: "bg-card" })}>
-                  自分の内容で始める
-                </a>
-              </div>
-            )}
-          </section>
-          <SectionNav status={sections} />
+              </EmptyContent>
+            </Empty>
+          )}
           {loadError && (
             <Alert variant="destructive">
               <TriangleAlert />
@@ -284,7 +257,7 @@ export function ResumeApp() {
               <AlertDescription>この文字は PDF では表示されません：{missing.join(" ")}</AlertDescription>
             </Alert>
           )}
-          <ResumeForm counts={check?.counts ?? null} layout={assets?.layout ?? null} status={sections} />
+          <ResumeForm counts={check?.counts ?? null} layout={assets?.layout ?? null} />
         </div>
 
         <aside className="hidden lg:block" aria-label="プレビュー">
@@ -328,11 +301,11 @@ export function ResumeApp() {
       {/* スマホ：画面下に固定する操作バー */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/90 backdrop-blur-md lg:hidden">
         <div className="mx-auto flex max-w-xl gap-2 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <Button variant="outline" className="h-11 flex-1" disabled={!assets} onClick={() => setPreviewOpen(true)}>
+          <Button variant="outline" className="h-12 flex-1 text-base" disabled={!assets} onClick={() => setPreviewOpen(true)}>
             <Eye data-icon="inline-start" />
             プレビュー
           </Button>
-          <Button className="h-11 flex-1" disabled={blocked} onClick={() => save("a4")}>
+          <Button className="h-12 flex-1 text-base" disabled={blocked} onClick={() => save("a4")}>
             <Download data-icon="inline-start" />
             PDF を保存
           </Button>

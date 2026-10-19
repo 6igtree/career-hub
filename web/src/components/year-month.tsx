@@ -39,9 +39,9 @@ export function YearMonth({ value, onChange, label }: { value: string; onChange:
   const set = (year: string, mon: string) => onChange(year || mon ? `${year}-${mon ? mon.padStart(2, "0") : ""}` : "");
 
   return (
-    <div className="flex gap-1.5">
-      <Choice items={YEARS} value={y} onChange={(v) => set(v, month)} label={`${label}の年`} className="w-24" />
-      <Choice items={MONTHS} value={month} onChange={(v) => set(y, v)} label={`${label}の月`} className="w-20" />
+    <div className="flex gap-2">
+      <Choice items={YEARS} value={y} onChange={(v) => set(v, month)} label={`${label}の年`} className="h-11 w-32 text-base sm:h-9 sm:w-28 sm:text-sm" />
+      <Choice items={MONTHS} value={month} onChange={(v) => set(y, v)} label={`${label}の月`} className="h-11 w-24 text-base sm:h-9 sm:w-20 sm:text-sm" />
     </div>
   );
 }
