@@ -15,6 +15,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/button-group";
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -179,22 +180,23 @@ export function ResumeApp() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <div className="hidden items-center lg:flex">
-              <Button className="rounded-r-none" disabled={blocked} onClick={() => save("a4")}>
-                <Download data-icon="inline-start" />
-                PDF を保存
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={<Button className="rounded-l-none border-l-primary-foreground/25 px-2" disabled={blocked} aria-label="保存する形を選ぶ" />}
-                >
-                  <ChevronDown />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem onClick={() => save("a4")}>A4（2枚）で保存</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => save("a3")}>A3（見開き）で保存</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+            <div className="hidden lg:block">
+              <ButtonGroup>
+                <Button disabled={blocked} onClick={() => save("a4")}>
+                  <Download data-icon="inline-start" />
+                  PDF を保存
+                </Button>
+                <ButtonGroupSeparator />
+                <DropdownMenu>
+                  <DropdownMenuTrigger render={<Button size="icon" disabled={blocked} aria-label="保存する形を選ぶ" />}>
+                    <ChevronDown />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuItem onClick={() => save("a4")}>A4（2枚）で保存</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => save("a3")}>A3（見開き）で保存</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </ButtonGroup>
             </div>
           </div>
         </div>

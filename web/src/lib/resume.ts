@@ -334,8 +334,10 @@ export async function makePdf(kind: "a4" | "a3", d: Resume, assets: Assets) {
   const [{ PDFDocument }, fontkit] = await Promise.all([import("pdf-lib"), import("@pdf-lib/fontkit").then((m) => m.default)]);
   const doc = await PDFDocument.load(kind === "a3" ? assets.a3 : assets.a4);
   doc.registerFontkit(fontkit);
-  const font = await doc.embedFont(assets.font, { subset: true });
-  const photo = d.photo ? await doc.embedJpg(await (await fetch(d.photo)).arrayBuffer()) : null;
+  const [font, photo] = await Promise.all([
+    doc.embedFont(assets.font, { subset: true }),
+    d.photo ? fetch(d.photo).then((r) => r.arrayBuffer()).then((b) => doc.embedJpg(b)) : null,
+  ]);
   const { left, right } = layoutResume(d, assets.layout, documentDate(d));
   const pages = doc.getPages();
   if (kind === "a3") {

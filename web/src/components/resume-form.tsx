@@ -1,15 +1,18 @@
 "use client";
 
 import { useId } from "react";
-import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Mail, Phone, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldTitle } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText, InputGroupTextarea } from "@/components/ui/input-group";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { DateField } from "@/components/date-field";
+import { GenderField } from "@/components/gender-field";
 import { PhotoField } from "@/components/photo-field";
 import { YearMonth } from "@/components/year-month";
 import { blankEntry, blankJob, type Address, type Counts, type Layout } from "@/lib/resume";
@@ -18,15 +21,23 @@ import { updateResume, useResume } from "@/lib/store";
 type TextFieldProps = Omit<React.ComponentProps<typeof Input>, "onChange"> & {
   label: string;
   description?: string;
+  addon?: React.ReactNode; // 入力欄の先頭に置く記号やアイコン（〒 など）
   onChange: (value: string) => void;
 };
 
-function TextField({ label, description, className, onChange, ...props }: TextFieldProps) {
+function TextField({ label, description, addon, className, onChange, ...props }: TextFieldProps) {
   const id = useId();
   return (
     <Field className={className}>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <Input id={id} onChange={(e) => onChange(e.target.value)} {...props} />
+      {addon ? (
+        <InputGroup>
+          <InputGroupAddon>{addon}</InputGroupAddon>
+          <InputGroupInput id={id} onChange={(e) => onChange(e.target.value)} {...props} />
+        </InputGroup>
+      ) : (
+        <Input id={id} onChange={(e) => onChange(e.target.value)} {...props} />
+      )}
       {description && <FieldDescription>{description}</FieldDescription>}
     </Field>
   );
@@ -71,12 +82,29 @@ function AddressFields({ value, onChange, autofill }: { value: Address; onChange
   const ac = (token: string) => (autofill ? token : "off");
   return (
     <FieldGroup className="grid gap-4 sm:grid-cols-2">
-      <TextField label="郵便番号" value={value.postal} onChange={(v) => onChange("postal", v)} placeholder="700-0000" inputMode="numeric" autoComplete={ac("postal-code")} />
-      <TextField label="電話" type="tel" value={value.phone} onChange={(v) => onChange("phone", v)} placeholder="090-0000-0000" autoComplete={ac("tel")} />
+      <TextField
+        label="郵便番号"
+        addon={<InputGroupText>〒</InputGroupText>}
+        value={value.postal}
+        onChange={(v) => onChange("postal", v)}
+        placeholder="700-0000"
+        inputMode="numeric"
+        autoComplete={ac("postal-code")}
+      />
+      <TextField
+        label="電話"
+        addon={<Phone />}
+        type="tel"
+        value={value.phone}
+        onChange={(v) => onChange("phone", v)}
+        placeholder="090-0000-0000"
+        autoComplete={ac("tel")}
+      />
       <TextField label="住所" className="sm:col-span-2" value={value.address} onChange={(v) => onChange("address", v)} autoComplete={ac("street-address")} />
       <TextField label="住所のふりがな" className="sm:col-span-2" value={value.address_kana} onChange={(v) => onChange("address_kana", v)} />
       <TextField
         label="メール"
+        addon={<Mail />}
         type="email"
         className="sm:col-span-2"
         value={value.email}
@@ -166,8 +194,11 @@ export function ResumeForm({ counts, layout }: { counts: Counts | null; layout: 
   const resume = useResume();
   const p = resume.profile;
   const setProfile = (key: keyof typeof p, v: string) => updateResume((r) => void (r.profile[key] = v));
+  const birthId = useId();
+  const dateId = useId();
   const motivationId = useId();
   const requestId = useId();
+  const motivationLength = [...resume.resume.motivation.replace(/\s/g, "")].length;
 
   return (
     <div className="flex flex-col gap-4">
@@ -179,16 +210,30 @@ export function ResumeForm({ counts, layout }: { counts: Counts | null; layout: 
           <FieldGroup className="grid gap-4 sm:grid-cols-2">
             <TextField label="氏名" value={p.name} onChange={(v) => setProfile("name", v)} placeholder="山田 太郎" autoComplete="name" />
             <TextField label="ふりがな" value={p.kana} onChange={(v) => setProfile("kana", v)} placeholder="やまだ たろう" />
-            <TextField label="生年月日" type="date" value={p.birth} onChange={(v) => setProfile("birth", v)} autoComplete="bday" />
-            <TextField label="性別（記入は任意）" value={p.gender} onChange={(v) => setProfile("gender", v)} />
-            <TextField
-              label="書類の日付"
-              type="date"
-              className="sm:col-span-2"
-              value={resume.date}
-              onChange={(v) => updateResume((r) => void (r.date = v))}
-              description="提出する日。空けておくと今日の日付が入り、年齢もその日で計算します"
-            />
+            <Field>
+              <FieldLabel htmlFor={birthId}>生年月日</FieldLabel>
+              <DateField
+                id={birthId}
+                value={p.birth}
+                onChange={(v) => setProfile("birth", v)}
+                placeholder="選んでください"
+                initialMonth={new Date(new Date().getFullYear() - 25, 0)}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor={dateId}>書類の日付</FieldLabel>
+              <DateField
+                id={dateId}
+                value={resume.date}
+                onChange={(v) => updateResume((r) => void (r.date = v))}
+                placeholder="今日の日付"
+                clearLabel="今日の日付にする"
+              />
+              <FieldDescription>提出する日。空けておくと今日の日付が入り、年齢もその日で計算します</FieldDescription>
+            </Field>
+            <div className="sm:col-span-2">
+              <GenderField value={p.gender} onChange={(v) => setProfile("gender", v)} />
+            </div>
           </FieldGroup>
           <Separator />
           <Field>
@@ -260,12 +305,17 @@ export function ResumeForm({ counts, layout }: { counts: Counts | null; layout: 
         <CardContent className="flex flex-col gap-5">
           <Field>
             <FieldLabel htmlFor={motivationId}>志望の動機、特技、好きな学科、アピールポイントなど</FieldLabel>
-            <Textarea
-              id={motivationId}
-              rows={8}
-              value={resume.resume.motivation}
-              onChange={(e) => updateResume((r) => void (r.resume.motivation = e.target.value))}
-            />
+            <InputGroup>
+              <InputGroupTextarea
+                id={motivationId}
+                rows={8}
+                value={resume.resume.motivation}
+                onChange={(e) => updateResume((r) => void (r.resume.motivation = e.target.value))}
+              />
+              <InputGroupAddon align="block-end">
+                <InputGroupText className="ml-auto tabular-nums">{motivationLength} 文字</InputGroupText>
+              </InputGroupAddon>
+            </InputGroup>
             <FieldDescription>長い文章は、欄に収まるまで文字を小さくします</FieldDescription>
           </Field>
           <Field>

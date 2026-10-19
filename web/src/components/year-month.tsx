@@ -1,15 +1,38 @@
 "use client";
 
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const THIS_YEAR = new Date().getFullYear();
-const YEARS = Array.from({ length: THIS_YEAR + 2 - 1950 }, (_, i) => String(THIS_YEAR + 1 - i));
-const MONTHS = Array.from({ length: 12 }, (_, i) => String(i + 1));
+const YEARS = [
+  { label: "年", value: null },
+  ...Array.from({ length: THIS_YEAR + 2 - 1950 }, (_, i) => String(THIS_YEAR + 1 - i)).map((y) => ({ label: `${y}年`, value: y })),
+];
+const MONTHS = [{ label: "月", value: null }, ...Array.from({ length: 12 }, (_, i) => ({ label: `${i + 1}月`, value: String(i + 1) }))];
 
-/**
- * 年と月を選ぶ。値は "2014-04" の形。片方だけ選んだ途中の状態は "2014-" のように持つ。
- * スマホでは端末の選択画面（ドラム）が出るので、ブラウザの月入力より選びやすい
- */
+function Choice({ items, value, onChange, label, className }: {
+  items: { label: string; value: string | null }[];
+  value: string;
+  onChange: (v: string) => void;
+  label: string;
+  className: string;
+}) {
+  return (
+    <Select items={items} value={value || null} onValueChange={(v) => onChange((v as string | null) ?? "")}>
+      <SelectTrigger aria-label={label} className={className}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {items.map((item) => (
+          <SelectItem key={item.value ?? "none"} value={item.value}>
+            {item.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+/** 年と月を選ぶ。値は "2014-04" の形。片方だけ選んだ途中の状態は "2014-" のように持つ */
 export function YearMonth({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
   const [y = "", m = ""] = (value || "").split("-");
   const month = m ? String(Number(m)) : "";
@@ -17,22 +40,8 @@ export function YearMonth({ value, onChange, label }: { value: string; onChange:
 
   return (
     <div className="flex gap-1.5">
-      <NativeSelect aria-label={`${label}の年`} value={y} onChange={(e) => set(e.target.value, month)} className="w-24">
-        <NativeSelectOption value="">年</NativeSelectOption>
-        {YEARS.map((v) => (
-          <NativeSelectOption key={v} value={v}>
-            {v}年
-          </NativeSelectOption>
-        ))}
-      </NativeSelect>
-      <NativeSelect aria-label={`${label}の月`} value={month} onChange={(e) => set(y, e.target.value)} className="w-20">
-        <NativeSelectOption value="">月</NativeSelectOption>
-        {MONTHS.map((v) => (
-          <NativeSelectOption key={v} value={v}>
-            {v}月
-          </NativeSelectOption>
-        ))}
-      </NativeSelect>
+      <Choice items={YEARS} value={y} onChange={(v) => set(v, month)} label={`${label}の年`} className="w-24" />
+      <Choice items={MONTHS} value={month} onChange={(v) => set(y, v)} label={`${label}の月`} className="w-20" />
     </div>
   );
 }
