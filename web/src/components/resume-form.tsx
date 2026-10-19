@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import { Award, Check, ChevronRight, GraduationCap, Mail, MapPin, MessageSquareText, Phone, Plus, Trash2, UserRound } from "lucide-react";
+import { Award, Check, ChevronRight, GraduationCap, MapPin, MessageSquareText, Phone, Plus, Trash2, UserRound } from "lucide-react";
 import { cn } from "cn";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { DateField } from "@/components/date-field";
 import { EditSheet } from "@/components/edit-sheet";
+import { EmailField } from "@/components/email-field";
 import { GenderField } from "@/components/gender-field";
 import { PhotoField } from "@/components/photo-field";
 import { YearMonth } from "@/components/year-month";
@@ -74,14 +75,12 @@ function AddressFields({ value, onChange, autofill }: { value: Address; onChange
       />
       <TextField label="住所" className="sm:col-span-2" value={value.address} onChange={(v) => onChange("address", v)} autoComplete={ac("street-address")} />
       <TextField label="住所のふりがな" className="sm:col-span-2" value={value.address_kana} onChange={(v) => onChange("address_kana", v)} />
-      <TextField
+      <EmailField
         label="メール"
-        addon={<Mail />}
-        type="email"
         className="sm:col-span-2"
         value={value.email}
         onChange={(v) => onChange("email", v)}
-        autoComplete={ac("email")}
+        autofill={autofill}
         description="様式にメール欄がないので、電話欄の下に入ります"
       />
     </FieldGroup>
