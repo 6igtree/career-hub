@@ -1,0 +1,9 @@
+# Vercel に送るのはブラウザ版のビルドに要るものだけ。
+# 手元の career.toml や写真、out/ の PDF（個人情報）を送らないよう、許可したものだけを通す
+/*
+!/form
+!/web
+!/vercel.json
+web/node_modules
+web/.next
+web/out
