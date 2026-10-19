@@ -92,7 +92,7 @@ function AddressFields({ value, onChange, autofill }: { value: Address; onChange
 function EntryRow({ title, description, onClick, warn }: { title: string; description: string; onClick: () => void; warn?: boolean }) {
   return (
     <Item variant="outline" className="bg-card text-left hover:bg-muted/60" render={<button type="button" onClick={onClick} />}>
-      <ItemContent>
+      <ItemContent className="wrap-anywhere">
         <ItemTitle className="text-base sm:text-sm">{title}</ItemTitle>
         <ItemDescription className={cn(warn && "text-destructive")}>{description}</ItemDescription>
       </ItemContent>
@@ -364,7 +364,7 @@ export function ResumeForm({ counts, layout }: { counts: Counts | null; layout: 
           <div className="flex flex-col gap-6 pt-1 pb-4">
             <AddressFields value={p} onChange={setProfile} autofill />
             <Collapsible className="rounded-lg border">
-              <CollapsibleTrigger className="group flex h-11 w-full items-center justify-between gap-2 px-3 text-left text-base font-medium sm:h-9 sm:text-sm">
+              <CollapsibleTrigger className="group flex min-h-11 w-full items-center justify-between gap-2 px-3 py-2 text-left text-base font-medium sm:min-h-9 sm:text-sm">
                 現住所以外に連絡を希望する場合
                 <ChevronRight className="size-4 text-muted-foreground transition-transform group-data-[panel-open]:rotate-90" />
               </CollapsibleTrigger>
