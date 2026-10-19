@@ -5,6 +5,7 @@
 import datetime
 import html
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -28,6 +29,7 @@ COLS_L = (67.41, 122.65, 148.86, 555.15)  # 年 | 月 | 内容 | 右端
 COLS_R = (648.96, 704.19, 730.40, 1136.69)
 REQUEST_ROWS, REQUEST_ROW_H = 4, 25.79
 CONTACT_DY = 64.2  # 現住所欄から連絡先欄までの距離
+PHOTO_MAX = 1200  # 写真の長辺（px）の上限。写真欄の高さ 38.7mm に対して約 790dpi あれば十分
 # A4 版の各ページは A3 版の左右半分と同じ配置（縦のずれ 0.3pt 以内）なので、横にずらして使う
 A4_SHIFT = (-14.19, -595.73)
 
@@ -195,6 +197,28 @@ def shokumu(d, today):
 </section>"""
 
 
+def prepare_photo(p, base, outdir):
+    """写真のパスを career.toml の場所から解決する。macOS では HEIC も使えるよう sips で JPEG にし、
+    スマホの写真で PDF が重くならないよう長辺を PHOTO_MAX まで縮める"""
+    if not p.get("photo"):
+        return
+    src = (base / p["photo"]).resolve()
+    if not src.exists():
+        sys.exit(f"写真が見つかりません: {src}")
+    if shutil.which("sips"):
+        info = subprocess.run(["sips", "-g", "pixelWidth", "-g", "pixelHeight", src], capture_output=True, text=True).stdout
+        dims = [int(n) for n in re.findall(r"pixel(?:Width|Height): (\d+)", info)]
+        if not dims:
+            sys.exit(f"写真を画像として読み込めません: {src}")
+        resize = ["-Z", str(PHOTO_MAX)] if max(dims) > PHOTO_MAX else []  # -Z は小さい画像を拡大してしまう
+        dst = outdir / "photo.jpg"
+        subprocess.run(["sips", "-s", "format", "jpeg", *resize, src, "--out", dst], check=True, capture_output=True)
+        src = dst
+    elif src.suffix.lower() in (".heic", ".heif"):
+        sys.exit("HEIC の写真は macOS 以外では使えません。JPEG か PNG に変換してください")
+    p["photo"] = str(src)
+
+
 def chrome():
     if os.environ.get("CHROME"):
         return os.environ["CHROME"]
@@ -222,6 +246,7 @@ def main():
     today = datetime.date.fromisoformat(d["date"]) if d.get("date") else datetime.date.today()
     outdir = ROOT / "out"
     outdir.mkdir(exist_ok=True)
+    prepare_photo(d["profile"], src.parent, outdir)
     write_rirekisho(d, today, outdir)
     to_pdf(shokumu(d, today), outdir / "職務経歴書.pdf")
     if sys.platform == "darwin":
