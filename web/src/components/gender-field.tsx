@@ -46,7 +46,6 @@ export function GenderField({ value, onChange }: { value: string; onChange: (v: 
       {free && (
         <Input
           aria-label="性別（自由に記入）"
-          className="h-11 text-base sm:h-9 sm:text-sm"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           autoFocus={freeChosen}

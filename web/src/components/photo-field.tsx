@@ -34,12 +34,12 @@ export function PhotoField({ photo, layout, onChange }: { photo: string; layout:
       </div>
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" disabled={!layout} onClick={() => input.current?.click()}>
+          <Button type="button" variant="outline" className="h-11 sm:h-9" disabled={!layout} onClick={() => input.current?.click()}>
             <Upload data-icon="inline-start" />
             {photo ? "写真を変える" : "写真を選ぶ"}
           </Button>
           {photo && (
-            <Button type="button" variant="ghost" size="sm" onClick={() => onChange("")}>
+            <Button type="button" variant="ghost" className="h-11 sm:h-9" onClick={() => onChange("")}>
               <X data-icon="inline-start" />
               外す
             </Button>

@@ -45,7 +45,7 @@ export function DateField({
           <Button
             id={id}
             variant="outline"
-            className="h-11 w-full justify-start text-base font-normal sm:h-9 sm:text-sm"
+            className="h-11 w-full justify-start bg-transparent text-base font-normal sm:h-9 sm:text-sm"
             onPointerEnter={loadCalendar}
             onFocus={loadCalendar}
           />
