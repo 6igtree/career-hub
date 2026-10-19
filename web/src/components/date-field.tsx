@@ -58,7 +58,7 @@ export function DateField({
           <span className="text-muted-foreground">{placeholder}</span>
         )}
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent className="w-auto min-w-(--anchor-width) p-0 sm:min-w-0" align="start">
         <DateCalendar
           selected={date}
           defaultMonth={initialMonth}
@@ -71,8 +71,7 @@ export function DateField({
           <div className="border-t p-2">
             <Button
               variant="ghost"
-              size="sm"
-              className="w-full"
+              className="h-11 w-full sm:h-8"
               onClick={() => {
                 onChange("");
                 setOpen(false);

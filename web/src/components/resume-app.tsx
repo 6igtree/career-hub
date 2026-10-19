@@ -163,10 +163,10 @@ export function ResumeApp() {
               この端末に自動保存
             </span>
             <DropdownMenu>
-              <DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="メニュー" />}>
-                <MoreHorizontal />
+              <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="size-11 sm:size-8" aria-label="メニュー" />}>
+                <MoreHorizontal className="size-5 sm:size-4" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-56 sm:w-48">
                 <DropdownMenuItem onClick={() => setResume(structuredClone(SAMPLE))}>
                   <Sparkles />
                   見本を入れる
@@ -344,8 +344,9 @@ export function ResumeApp() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>やめる</AlertDialogCancel>
+            <AlertDialogCancel className="h-11 sm:h-9">やめる</AlertDialogCancel>
             <AlertDialogAction
+              className="h-11 sm:h-9"
               variant="destructive"
               onClick={() => {
                 setResume(emptyResume());
