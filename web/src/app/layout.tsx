@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -12,20 +11,16 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   viewportFit: "cover", // iPhone の画面下の余白（ホームバー）を避けて操作バーを置くため
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f7f9" },
-    { media: "(prefers-color-scheme: dark)", color: "#16181c" },
-  ],
+  themeColor: "#f8f4ec", // 背景の生成りと同じ色
+  colorScheme: "light", // ダークモードは使わない（端末がダークでも、入力欄やスクロールバーを明るい色で出す）
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ja" className="h-full antialiased" suppressHydrationWarning>
+    <html lang="ja" className="h-full antialiased">
       <body className="flex min-h-full flex-col">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          {children}
-          <Toaster position="top-center" />
-        </ThemeProvider>
+        {children}
+        <Toaster position="top-center" />
       </body>
     </html>
   );
