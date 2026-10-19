@@ -1,7 +1,8 @@
 "use client";
 
 import { useId, useState } from "react";
-import { Award, Check, ChevronRight, GraduationCap, MapPin, MessageSquareText, Phone, Plus, Trash2, UserRound } from "lucide-react";
+import dynamic from "next/dynamic";
+import { Award, Check, ChevronRight, GraduationCap, MapPin, MessageSquareText, Plus, Trash2, UserRound } from "lucide-react";
 import { cn } from "cn";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,17 @@ import { updateResume, useResume } from "@/lib/store";
 
 // 入力欄の高さと文字サイズは components/ui 側でそろえている（スマホ 44px・16px／パソコン 36px・14px）
 const LABEL = "text-[15px] sm:text-sm";
+
+// 電話番号の部品は国ごとの規則表（圧縮後 30KB ほど）を含むので、現住所の欄を開いたときに読み込む
+const PhoneField = dynamic(() => import("@/components/phone-field").then((m) => m.PhoneField), {
+  ssr: false,
+  loading: () => (
+    <Field>
+      <FieldLabel className={LABEL}>電話</FieldLabel>
+      <Input disabled />
+    </Field>
+  ),
+});
 
 type TextFieldProps = Omit<React.ComponentProps<typeof Input>, "onChange"> & {
   label: string;
@@ -81,15 +93,7 @@ function AddressFields({ value, onChange, autofill }: { value: Address; onChange
         inputMode="numeric"
         autoComplete={ac("postal-code")}
       />
-      <TextField
-        label="電話"
-        addon={<Phone />}
-        type="tel"
-        value={value.phone}
-        onChange={(v) => onChange("phone", v)}
-        placeholder="090-0000-0000"
-        autoComplete={ac("tel")}
-      />
+      <PhoneField label="電話" value={value.phone} onChange={(v) => onChange("phone", v)} autofill={autofill} />
       <TextField label="住所" className="sm:col-span-2" value={value.address} onChange={(v) => onChange("address", v)} autoComplete={ac("street-address")} />
       <TextField label="住所のふりがな" className="sm:col-span-2" value={value.address_kana} onChange={(v) => onChange("address_kana", v)} />
       <EmailField
