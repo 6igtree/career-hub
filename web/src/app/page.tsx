@@ -1,5 +1,5 @@
-import { ResumeApp } from "@/components/resume-app";
+import { ResumeList } from "@/components/resume-list";
 
 export default function Page() {
-  return <ResumeApp />;
+  return <ResumeList />;
 }
