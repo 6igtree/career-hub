@@ -41,7 +41,15 @@ export function DateField({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
-        render={<Button id={id} variant="outline" className="w-full justify-start font-normal" onPointerEnter={loadCalendar} onFocus={loadCalendar} />}
+        render={
+          <Button
+            id={id}
+            variant="outline"
+            className="h-11 w-full justify-start text-base font-normal sm:h-9 sm:text-sm"
+            onPointerEnter={loadCalendar}
+            onFocus={loadCalendar}
+          />
+        }
       >
         <CalendarIcon data-icon="inline-start" className="text-muted-foreground" />
         {date ? (

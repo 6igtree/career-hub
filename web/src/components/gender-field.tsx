@@ -22,7 +22,9 @@ export function GenderField({ value, onChange }: { value: string; onChange: (v: 
 
   return (
     <FieldSet className="gap-2">
-      <FieldLegend variant="label">性別</FieldLegend>
+      <FieldLegend variant="label" className="text-[15px] sm:text-sm">
+        性別
+      </FieldLegend>
       <RadioGroup
         value={selected}
         onValueChange={(v) => {
@@ -35,14 +37,22 @@ export function GenderField({ value, onChange }: { value: string; onChange: (v: 
         {OPTIONS.map((o) => (
           <Field key={o.value} orientation="horizontal" className="w-auto">
             <RadioGroupItem value={o.value} id={`${id}-${o.value}`} />
-            <FieldLabel htmlFor={`${id}-${o.value}`} className="font-normal">
+            <FieldLabel htmlFor={`${id}-${o.value}`} className="py-1 text-base font-normal sm:py-0 sm:text-sm">
               {o.label}
             </FieldLabel>
           </Field>
         ))}
       </RadioGroup>
-      {free && <Input aria-label="性別（自由に記入）" value={value} onChange={(e) => onChange(e.target.value)} autoFocus={freeChosen} />}
-      <FieldDescription>記入は任意です。様式にも「未記載とすることも可能」と書かれています</FieldDescription>
+      {free && (
+        <Input
+          aria-label="性別（自由に記入）"
+          className="h-11 text-base sm:h-9 sm:text-sm"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          autoFocus={freeChosen}
+        />
+      )}
+      <FieldDescription>記入は任意です</FieldDescription>
     </FieldSet>
   );
 }
