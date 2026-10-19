@@ -50,10 +50,11 @@ function AccordionContent({
   children,
   ...props
 }: AccordionPrimitive.Panel.Props) {
+  // 開閉の動きのために中身を隠しているので、入力欄の光る枠が左右で切れないよう 4px 外側まで見せる
   return (
     <AccordionPrimitive.Panel
       data-slot="accordion-content"
-      className="overflow-hidden text-sm data-open:animate-accordion-down data-closed:animate-accordion-up"
+      className="-mx-1 overflow-hidden px-1 text-sm data-open:animate-accordion-down data-closed:animate-accordion-up"
       {...props}
     >
       <div
