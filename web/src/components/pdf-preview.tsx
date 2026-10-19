@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 /** パソコン向け：ブラウザ内蔵の PDF ビューアで表示する（拡大・ページ送り・印刷ができる） */
 export function PdfFrame({ bytes }: { bytes: Uint8Array }) {
@@ -11,11 +12,14 @@ export function PdfFrame({ bytes }: { bytes: Uint8Array }) {
 
 /**
  * スマホ向け：PDF の各ページを画像として描く。
- * スマホのブラウザはページ内に PDF を表示できない（iPhone は1ページ目だけ、Android はダウンロードになる）ため
+ * スマホのブラウザはページ内に PDF を表示できない（iPhone は1ページ目だけ、Android はダウンロードになる）ため。
+ * 最初のページを描き終えるまでは fallback を出し、作り直している間は前のページの上に「更新しています…」を重ねる
  */
-export function PdfPreview({ bytes }: { bytes: Uint8Array | null }) {
+export function PdfPreview({ bytes, fallback, updating = false }: { bytes: Uint8Array | null; fallback: React.ReactNode; updating?: boolean }) {
   const box = useRef<HTMLDivElement>(null);
+  const [rendered, setRendered] = useState<Uint8Array | null>(null); // いま表示しているページの元データ
   const [error, setError] = useState("");
+  const busy = updating || (!!bytes && bytes !== rendered);
 
   useEffect(() => {
     const el = box.current;
@@ -48,9 +52,13 @@ export function PdfPreview({ bytes }: { bytes: Uint8Array | null }) {
         if (!cancelled) {
           el.replaceChildren(...pages);
           setError("");
+          setRendered(bytes);
         }
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : String(e));
+          setRendered(bytes);
+        }
       }
     })();
     return () => {
@@ -59,9 +67,19 @@ export function PdfPreview({ bytes }: { bytes: Uint8Array | null }) {
   }, [bytes]);
 
   return (
-    <>
+    <div className="relative">
+      {rendered && busy && (
+        // 画面をスクロールしても見えるよう上に貼りつけ、ページは押し下げない
+        <div className="pointer-events-none sticky top-2 z-10 -mb-8 flex h-8 justify-center" role="status">
+          <span className="flex items-center gap-1.5 rounded-full bg-background/95 px-3 text-xs shadow-sm ring-1 ring-foreground/10">
+            <Loader2 className="size-3.5 animate-spin text-primary" aria-hidden />
+            更新しています…
+          </span>
+        </div>
+      )}
+      {!rendered && fallback}
       <div ref={box} className="flex flex-col gap-4" />
       {error && <p className="text-sm text-destructive">プレビューを表示できませんでした：{error}</p>}
-    </>
+    </div>
   );
 }
