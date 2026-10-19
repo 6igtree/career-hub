@@ -1,21 +1,25 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Check,
   ChevronDown,
+  ChevronLeft,
   Download,
   Eye,
   FileText,
-  FolderOpen,
   Info,
   Loader2,
   MoreHorizontal,
+  Pencil,
   Sparkles,
   Trash2,
   TriangleAlert,
   Upload,
 } from "lucide-react";
+import { cn } from "cn";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -28,7 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/button-group";
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -36,9 +40,11 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTi
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsDesktop } from "@/components/edit-sheet";
 import { PdfFrame, PdfPreview } from "@/components/pdf-preview";
+import { RenameSheet } from "@/components/rename-sheet";
 import { ResumeForm } from "@/components/resume-form";
-import { documentDate, emptyResume, layoutResume, loadAssets, makePdf, missingChars, SAMPLE, toResume, type Assets, type Resume } from "@/lib/resume";
-import { setResume, useResume } from "@/lib/store";
+import { SiteFooter } from "@/components/site";
+import { documentDate, emptyResume, layoutResume, loadAssets, makePdf, missingChars, SAMPLE, type Assets, type Resume } from "@/lib/resume";
+import { openResume, setResume, useResume, useResumeList } from "@/lib/store";
 
 function download(blob: Blob, name: string) {
   const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: name });
@@ -71,8 +77,24 @@ function PreviewLoading({ progress }: { progress: number }) {
   );
 }
 
+/** 編集画面。開く履歴書は ?id= で受け取る（中身はブラウザにしかないので、ページは1つだけ書き出す） */
 export function ResumeApp() {
+  const id = useSearchParams().get("id") ?? "";
+  return <OpenResume key={id} id={id} />;
+}
+
+function OpenResume({ id }: { id: string }) {
+  const router = useRouter();
+  const [found] = useState(() => openResume(id));
+  useEffect(() => {
+    if (!found) router.replace("/"); // 削除済みなどで見つからないときは一覧へ
+  }, [found, router]);
+  return found ? <Editor id={id} /> : null;
+}
+
+function Editor({ id }: { id: string }) {
   const resume = useResume();
+  const title = useResumeList().find((s) => s.id === id)?.title ?? "履歴書";
   const isDesktop = useIsDesktop();
   const [assets, setAssets] = useState<Assets | null>(null);
   const [progress, setProgress] = useState(0);
@@ -81,7 +103,7 @@ export function ResumeApp() {
   const [busy, setBusy] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
-  const importInput = useRef<HTMLInputElement>(null);
+  const [renaming, setRenaming] = useState(false);
 
   useEffect(() => {
     loadAssets(setProgress)
@@ -128,18 +150,8 @@ export function ResumeApp() {
   }
 
   function exportData() {
-    download(new Blob([JSON.stringify(resume, null, 2)], { type: "application/json" }), "career-hub.json");
-    toast.success("データを書き出しました", { description: "別の端末では「データを読み込む」で続きから使えます" });
-  }
-
-  async function importData(file: File | undefined) {
-    if (!file) return;
-    try {
-      setResume(toResume(JSON.parse(await file.text())));
-      toast.success("データを読み込みました");
-    } catch {
-      toast.error("このファイルは読み込めませんでした", { description: "「データを書き出す」で保存した JSON ファイルを選んでください" });
-    }
+    download(new Blob([JSON.stringify(resume, null, 2)], { type: "application/json" }), `${title}.json`);
+    toast.success("データを書き出しました", { description: "別の端末では、一覧のメニューの「ファイルから読み込む」で続きから使えます" });
   }
 
   const status = !assets ? "準備中" : busy ? "更新中…" : "A4・2枚";
@@ -147,26 +159,27 @@ export function ResumeApp() {
   return (
     <>
       <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-3 px-4 sm:px-6">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
-              <FileText className="size-4" aria-hidden />
-            </span>
-            <div className="min-w-0 leading-tight">
-              <p className="truncate text-sm font-semibold">履歴書をつくる</p>
-              <p className="truncate text-xs text-muted-foreground">厚生労働省様式 ・ career-hub</p>
-            </div>
+        <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-1.5 px-2 sm:gap-3 sm:px-6">
+          <Link href="/" aria-label="一覧へ戻る" className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "size-11 shrink-0 sm:size-8")}>
+            <ChevronLeft className="size-5 sm:size-4" />
+          </Link>
+          <div className="min-w-0 leading-tight">
+            <p className="truncate text-sm font-semibold">{title}</p>
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Check className="size-3 shrink-0 text-primary" aria-hidden />
+              <span className="truncate">この端末に自動保存</span>
+            </p>
           </div>
-          <div className="ml-auto flex items-center gap-2">
-            <span className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
-              <Check className="size-3.5 text-primary" aria-hidden />
-              この端末に自動保存
-            </span>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="size-11 sm:size-8" aria-label="メニュー" />}>
                 <MoreHorizontal className="size-5 sm:size-4" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 sm:w-48">
+              <DropdownMenuContent align="end" className="w-60 sm:w-52">
+                <DropdownMenuItem onClick={() => setRenaming(true)}>
+                  <Pencil />
+                  名前を変える
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setResume(structuredClone(SAMPLE))}>
                   <Sparkles />
                   見本を入れる
@@ -175,14 +188,10 @@ export function ResumeApp() {
                   <Upload />
                   データを書き出す
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => importInput.current?.click()}>
-                  <FolderOpen />
-                  データを読み込む
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem variant="destructive" onClick={() => setConfirmReset(true)}>
                   <Trash2 />
-                  すべて消す
+                  内容をすべて消す
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -216,7 +225,11 @@ export function ResumeApp() {
                 <EmptyMedia variant="icon">
                   <FileText />
                 </EmptyMedia>
-                <EmptyTitle className="text-lg">厚生労働省様式の履歴書を、そのまま PDF に</EmptyTitle>
+                <EmptyTitle className="text-lg">
+                {/* 言葉の途中で折り返さないよう、まとまりごとに区切る */}
+                <span className="inline-block">厚生労働省様式の履歴書を、</span>
+                <span className="inline-block">そのまま PDF に</span>
+              </EmptyTitle>
                 <EmptyDescription>
                   入力するだけで、公式の様式に書き込んだ履歴書ができます。無料・登録不要で、入力内容はこの端末の外に送信しません。
                 </EmptyDescription>
@@ -276,27 +289,7 @@ export function ResumeApp() {
         </aside>
       </main>
 
-      <footer className="border-t text-xs text-muted-foreground">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-1 px-4 pt-6 pb-28 sm:px-6 lg:pb-6">
-          <p>
-            出典：厚生労働省「厚生労働省履歴書様式例」（
-            <a className="underline underline-offset-2" href="https://www.hellowork.mhlw.go.jp/member/career_doc01.html">
-              ハローワークインターネットサービス
-            </a>
-            ）、
-            <a className="underline underline-offset-2" href="https://www.digital.go.jp/resources/open_data/public_data_license_v1.0">
-              公共データ利用規約（第1.0版）
-            </a>
-            。公式 PDF に記入内容を書き加えて作成しています。
-          </p>
-          <p>
-            本ツールは厚生労働省およびハローワークとは関係のない非公式のツールです。PDF のフォントは IPAex明朝（IPAフォントライセンス）。
-            <a className="underline underline-offset-2" href="https://github.com/6igtree/career-hub">
-              ソースコード
-            </a>
-          </p>
-        </div>
-      </footer>
+      <SiteFooter bottomBar />
 
       {/* スマホ：画面下に固定する操作バー */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/90 backdrop-blur-md lg:hidden">
@@ -338,9 +331,9 @@ export function ResumeApp() {
       <AlertDialog open={confirmReset} onOpenChange={setConfirmReset}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>入力内容をすべて消しますか？</AlertDialogTitle>
+            <AlertDialogTitle>この履歴書の内容をすべて消しますか？</AlertDialogTitle>
             <AlertDialogDescription>
-              このブラウザに保存している内容と写真が消えます。残しておきたい場合は、先に「データを書き出す」で保存してください。
+              入力内容と写真が消えます。残しておきたい場合は、先に一覧で複製するか、「データを書き出す」で保存してください。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -351,7 +344,7 @@ export function ResumeApp() {
               onClick={() => {
                 setResume(emptyResume());
                 setConfirmReset(false);
-                toast("すべて消しました");
+                toast("内容を消しました");
               }}
             >
               消す
@@ -360,16 +353,7 @@ export function ResumeApp() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <input
-        ref={importInput}
-        type="file"
-        accept="application/json,.json"
-        className="hidden"
-        onChange={(e) => {
-          importData(e.target.files?.[0]);
-          e.target.value = "";
-        }}
-      />
+      {renaming && <RenameSheet id={id} title={title} onClose={() => setRenaming(false)} />}
     </>
   );
 }
