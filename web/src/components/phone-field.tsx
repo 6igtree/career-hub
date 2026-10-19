@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { AsYouType, getCountries, getCountryCallingCode, type CountryCode } from "libphonenumber-js/min";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -59,6 +59,7 @@ export function PhoneField({ label, value, onChange, autofill }: {
   autofill: boolean;
 }) {
   const id = useId();
+  const group = useRef<HTMLDivElement>(null);
   const [picked, setPicked] = useState<CountryCode>("JP");
   const country = countryOf(value) ?? picked;
   const prefix = country === "JP" ? "" : `+${getCountryCallingCode(country)} `;
@@ -89,12 +90,13 @@ export function PhoneField({ label, value, onChange, autofill }: {
       <FieldLabel htmlFor={id} className="text-[15px] sm:text-sm">
         {label}
       </FieldLabel>
-      <ButtonGroup className="w-full">
+      <ButtonGroup ref={group} className="w-full">
         <Select items={ITEMS} value={country} onValueChange={(v) => pick(v as CountryCode)}>
           <SelectTrigger aria-label={`${label}の国番号`}>
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="w-auto max-w-(--available-width)">
+          {/* 一覧は国番号の部分ではなく電話欄全体の下に、同じ幅で出す */}
+          <SelectContent anchor={group} align="start" alignItemWithTrigger={false}>
             {TOP.map((c) => (
               <CountryItem key={c.code} c={c} />
             ))}
