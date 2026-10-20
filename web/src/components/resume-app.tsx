@@ -238,7 +238,7 @@ function Editor({ id }: { id: string }) {
                 </EmptyDescription>
               </EmptyHeader>
               <EmptyContent>
-                <Button className="h-11 px-5 text-base sm:h-9 sm:text-sm" onClick={() => setResume(structuredClone(SAMPLE))}>
+                <Button className="h-11 px-5 text-base sm:h-9 sm:text-sm has-data-[icon=inline-start]:pl-4.5" onClick={() => setResume(structuredClone(SAMPLE))}>
                   <Sparkles data-icon="inline-start" />
                   見本を入れる
                 </Button>

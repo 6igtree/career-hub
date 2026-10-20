@@ -158,11 +158,11 @@ export function ResumeList() {
               </EmptyDescription>
             </EmptyHeader>
             <EmptyContent className="sm:flex-row sm:justify-center">
-              <Button className="h-11 w-full px-5 text-base sm:h-9 sm:w-auto sm:text-sm" onClick={() => create()}>
+              <Button className="h-11 w-full px-5 text-base sm:h-9 sm:w-auto sm:text-sm has-data-[icon=inline-start]:pl-4.5" onClick={() => create()}>
                 <Plus data-icon="inline-start" />
                 新しく作る
               </Button>
-              <Button variant="outline" className="h-11 w-full px-5 text-base sm:h-9 sm:w-auto sm:text-sm" onClick={() => create(structuredClone(SAMPLE), "見本")}>
+              <Button variant="outline" className="h-11 w-full px-5 text-base sm:h-9 sm:w-auto sm:text-sm has-data-[icon=inline-start]:pl-4.5" onClick={() => create(structuredClone(SAMPLE), "見本")}>
                 <Sparkles data-icon="inline-start" />
                 見本で試す
               </Button>

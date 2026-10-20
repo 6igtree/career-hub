@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- 静的に書き出すので、next/image の最適化は使えない */
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Check, DoorOpen, FileCheckCorner, Files, FolderOpen, Printer, ShieldCheck, Smartphone } from "lucide-react";
+import { Check, FileCheckCorner, Files, FolderOpen, ShieldCheck, Smartphone } from "lucide-react";
 import { cn } from "cn";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
@@ -31,20 +31,18 @@ const jsonLd = {
   offers: { "@type": "Offer", price: "0", priceCurrency: "JPY" },
 };
 
-// 順番のない内容なので番号は付けない（番号は「使い方」だけ）
+// 順番のない内容なので番号は付けない（番号は「使い方」だけ）。無料・登録不要は見出しの下、用紙は使い方で伝える
 const FEATURES = [
-  { icon: FileCheckCorner, title: "公式の様式そのまま", text: "厚生労働省が配布している PDF に書き込むので、罫線や見出しが様式とずれません。" },
-  { icon: DoorOpen, title: "無料・登録不要", text: "開いてすぐ書き始められます。メールアドレスの登録もいりません。" },
-  { icon: ShieldCheck, title: "入力内容は外に出ない", text: "入力した内容と写真は、このブラウザの中だけに保存します。サーバーには送りません。" },
-  { icon: Smartphone, title: "スマホで最後まで", text: "入力から PDF の保存までスマホでできます。保存した PDF は LINE やメールでそのまま送れます。" },
-  { icon: Files, title: "応募先ごとに保存", text: "履歴書はいくつでも保存できます。複製して志望動機だけ書き換えれば、2社目からは手早く作れます。" },
-  { icon: Printer, title: "A4 でも A3 でも", text: "用紙は A4（2枚）と A3（見開き1枚）から選べます。証明写真は写真欄に合わせて中央で切り抜きます。" },
+  { icon: FileCheckCorner, title: "公式の様式そのまま", text: "厚生労働省の PDF に書き込むので、様式とずれません。" },
+  { icon: ShieldCheck, title: "入力内容は外に出ない", text: "保存先はこのブラウザの中だけ。サーバーには送りません。" },
+  { icon: Smartphone, title: "スマホで最後まで", text: "PDF の保存も、LINE やメールでの送信もスマホでできます。" },
+  { icon: Files, title: "応募先ごとに保存", text: "いくつでも保存でき、複製して志望動機だけ書き換えられます。" },
 ];
 
 const STEPS = [
-  { title: "入力する", text: "氏名や学歴・職歴を、項目ごとの欄に書きます。書いた内容はその場で自動保存されます。" },
-  { title: "仕上がりを確かめる", text: "「プレビュー」で PDF の仕上がりを確かめます。パソコンでは入力欄の横にいつも表示されます。" },
-  { title: "PDF で保存する", text: "A4 か A3 を選んで保存します。印刷して郵送にも、メールでの提出にも使えます。" },
+  { title: "入力する", text: "項目ごとの欄に書くだけ。写真も入れられ、自動で保存されます。" },
+  { title: "仕上がりを確かめる", text: "「プレビュー」で PDF の仕上がりを確かめられます。" },
+  { title: "PDF で保存する", text: "A4（2枚）か A3（見開き1枚）を選んで保存します。" },
 ];
 
 const FAQ = [
@@ -61,7 +59,7 @@ const FAQ = [
   { q: "印刷するときの用紙は？", a: "A4（2枚）と A3（見開き1枚）のどちらでも保存できます。" },
 ];
 
-const h2 = "font-serif text-2xl font-semibold sm:text-3xl";
+const h2 = "text-2xl font-bold sm:text-3xl";
 const phone = "w-[44%] max-w-48 overflow-hidden rounded-3xl shadow-lg ring-1 shadow-foreground/10 ring-foreground/10";
 
 /** トップ（説明のページ）。使っている人も見られるよう、自動で一覧へは移さない */
@@ -73,7 +71,7 @@ export default function Page() {
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-3 px-4 sm:px-6">
           <Brand />
           {/* リンクは Button ではなく buttonVariants で見た目だけ合わせる（shadcn の推奨） */}
-          <Link href="/app/" className={cn(buttonVariants({ variant: "outline" }), "ml-auto h-11 px-3 sm:h-9")}>
+          <Link href="/app/" className={cn(buttonVariants({ variant: "outline" }), "ml-auto h-11 px-3 sm:h-9 has-data-[icon=inline-start]:pl-2.5")}>
             <FolderOpen data-icon="inline-start" />
             保存した履歴書
           </Link>
@@ -83,19 +81,19 @@ export default function Page() {
       <main className="flex-1">
         <section className="mx-auto grid w-full max-w-5xl items-center gap-12 px-4 pt-10 pb-16 sm:px-6 md:grid-cols-[1fr_18rem] md:gap-14 md:pt-20 lg:grid-cols-[1fr_21rem]">
           <div>
-            <h1 className="font-serif text-[2rem] leading-snug font-semibold sm:text-4xl lg:text-[2.6rem]">
+            <h1 className="text-[2rem] leading-snug font-bold sm:text-4xl lg:text-[2.6rem]">
               {/* 言葉の途中で折り返さない */}
               <span className="inline-block">厚生労働省様式の</span>
               <span className="inline-block">履歴書を、</span>
               <span className="inline-block">そのまま PDF に</span>
             </h1>
             <p className="mt-5 max-w-xl leading-relaxed text-muted-foreground">
-              厚生労働省が配布している「履歴書様式例」の PDF に、入力した内容を書き込みます。罫線や見出しは公式のまま。入力した内容は外部に送りません。
+              厚生労働省の様式例の PDF に、そのまま書き込みます。入力した内容は外部に送りません。
             </p>
             <StartButtons className="mt-8" />
             <div className="mt-5 flex flex-wrap gap-2">
               {["無料", "登録不要", "スマホ対応"].map((label) => (
-                <Badge key={label} variant="outline" className="h-6 px-2.5 text-[0.8125rem]">
+                <Badge key={label} variant="outline" className="h-6 px-2.5 text-[0.8125rem] has-data-[icon=inline-start]:pl-2">
                   <Check data-icon="inline-start" className="text-primary" />
                   {label}
                 </Badge>
@@ -152,7 +150,7 @@ export default function Page() {
                 {STEPS.map(({ title, text }, i) => (
                   <Item key={title} role="listitem" className="items-start gap-3 p-0">
                     {/* 印鑑のような朱の丸で順番を示す */}
-                    <ItemMedia className="size-9 rounded-full border-[1.5px] border-primary font-serif text-base text-primary group-has-data-[slot=item-description]/item:translate-y-0">
+                    <ItemMedia className="size-9 rounded-full border-[1.5px] border-primary text-base font-semibold text-primary group-has-data-[slot=item-description]/item:translate-y-0">
                       {i + 1}
                     </ItemMedia>
                     <ItemContent>
@@ -194,7 +192,7 @@ export default function Page() {
             よくある質問
           </h2>
           {/* 閉じている答えも HTML に残す（検索エンジンが読め、ページ内検索でも開く） */}
-          <Accordion multiple hiddenUntilFound className="mt-8 max-w-3xl border-t-2 border-foreground">
+          <Accordion multiple hiddenUntilFound className="mt-8 border-t-2 border-foreground">
             {FAQ.map(({ q, a }) => (
               <AccordionItem key={q} value={q} className="border-b border-foreground/15">
                 <AccordionTrigger className="items-center py-4 text-base">{q}</AccordionTrigger>
@@ -212,7 +210,7 @@ export default function Page() {
                   すぐに書き始められます
                 </h2>
               </CardTitle>
-              <CardDescription className="mt-1">登録はいりません。見本で試してから、自分の内容に書き換えることもできます。</CardDescription>
+              <CardDescription className="mt-1">登録はいりません。見本で試すこともできます。</CardDescription>
             </CardHeader>
             <CardContent className="px-0">
               <StartButtons />
