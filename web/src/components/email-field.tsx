@@ -6,7 +6,7 @@ import { Mail } from "lucide-react";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 
-// よく使われる順。@ の前を打つと上から6つを候補に出し、@ のあとを打ち始めると合うものに絞る
+// よく使われる順。@ の前だけなら上から6つ、@ のあとを打つと前方一致で絞る
 const DOMAINS = [
   "gmail.com", "yahoo.co.jp", "icloud.com", "outlook.jp", "outlook.com", "hotmail.com",
   "docomo.ne.jp", "au.com", "ezweb.ne.jp", "softbank.ne.jp", "i.softbank.jp", "ymobile.ne.jp",
@@ -22,7 +22,7 @@ function suggest(value: string) {
     .map((d) => `${local}@${d}`);
 }
 
-/** メールアドレス。打ち始めると「taro@gmail.com」のような候補が出て、押すと入る。一覧にないものはそのまま打てばよい */
+/** メールアドレス。打ち始めると「taro@gmail.com」などの候補を出す */
 export function EmailField({ label, description, value, onChange, autofill, className }: {
   label: string;
   description?: string;

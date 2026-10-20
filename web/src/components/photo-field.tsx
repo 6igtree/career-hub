@@ -15,7 +15,7 @@ export function PhotoField({ photo, layout, onChange }: { photo: string; layout:
       onChange(await loadPhoto(file, layout));
     } catch {
       toast.error("この写真は読み込めませんでした", {
-        description: "JPEG か PNG の画像を選んでください（iPhone の HEIC 形式は Chrome では読めません）",
+        description: "JPEG か PNG を選んでください（Chrome は iPhone の HEIC を読めません）",
       });
     }
   }
@@ -45,7 +45,7 @@ export function PhotoField({ photo, layout, onChange }: { photo: string; layout:
             </Button>
           )}
         </div>
-        <p className="text-xs text-muted-foreground">縦4:横3 の証明写真がおすすめ。写真欄に合わせて中央で切り抜きます</p>
+        <p className="text-xs text-muted-foreground">縦4:横3 の証明写真がおすすめ（中央で切り抜きます）</p>
       </div>
       <input
         ref={input}

@@ -9,14 +9,14 @@ export function Brand() {
         <FileText className="size-4" aria-hidden />
       </span>
       <div className="min-w-0 leading-tight">
-        <p className="truncate text-sm font-semibold">履歴書をつくる</p>
-        <p className="truncate text-xs text-muted-foreground">厚生労働省様式 ・ career-hub</p>
+        <p className="truncate text-sm font-semibold">厚生労働省様式の履歴書</p>
+        <p className="truncate text-xs text-muted-foreground">career-hub</p>
       </div>
     </div>
   );
 }
 
-/** 出典と注意書き。bottomBar はスマホで画面下に操作バーがあるページ用（その分の余白をとる） */
+/** 出典と注意書き。bottomBar：スマホで画面下に操作バーがあるページ用の余白 */
 export function SiteFooter({ bottomBar = false }: { bottomBar?: boolean }) {
   return (
     <footer className="border-t text-xs text-muted-foreground">
@@ -33,7 +33,7 @@ export function SiteFooter({ bottomBar = false }: { bottomBar?: boolean }) {
           。公式 PDF に記入内容を書き加えて作成しています。
         </p>
         <p>
-          本ツールは厚生労働省およびハローワークとは関係のない非公式のツールです。PDF のフォントは IPAex明朝（IPAフォントライセンス）。
+          厚生労働省・ハローワークとは関係のない非公式ツールです。PDF のフォントは IPAex明朝（IPAフォントライセンス）。
           <a className="underline underline-offset-2" href="https://github.com/6igtree/career-hub">
             ソースコード
           </a>

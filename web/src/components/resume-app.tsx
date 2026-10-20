@@ -52,7 +52,7 @@ function download(blob: Blob, name: string) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
-/** スマホでは共有メニュー（ファイルに保存、LINE やメールで送るなど）を出す。使えなければダウンロードする */
+/** スマホでは共有メニューを出し、使えなければダウンロードする */
 async function deliver(pdf: Uint8Array, name: string) {
   const file = new File([pdf.slice()], name, { type: "application/pdf" });
   if (matchMedia("(pointer: coarse)").matches && navigator.canShare?.({ files: [file] })) {
@@ -66,24 +66,24 @@ async function deliver(pdf: Uint8Array, name: string) {
   download(file, name);
 }
 
-/** プレビューを出すまでの表示。フォントを読み込み終えたら、PDF を作っている段階の案内に変える */
+/** プレビューを出すまでの表示（フォントの読み込み → PDF の作成） */
 function PreviewLoading({ progress }: { progress: number }) {
   return (
-    // 案内は枠の中央に置く（枠の下だと、スマホでは画面下のボタンに隠れる）
+    // 枠の下だとスマホでは下のボタンに隠れるので、中央に置く
     <div className="relative">
       <Skeleton className="aspect-[595/842] w-full rounded-sm" />
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center" role="status">
         <Loader2 className="size-8 animate-spin text-primary" aria-hidden />
         <p className="text-sm text-muted-foreground">
-          {progress < 1 ? `PDF 用のフォントを読み込んでいます… ${Math.round(progress * 100)}%` : "プレビューを作っています…"}
+          {progress < 1 ? `フォントを読み込み中… ${Math.round(progress * 100)}%` : "プレビューを作成中…"}
         </p>
-        {progress < 1 && <p className="text-xs text-muted-foreground">初回のみ約 7.8MB を読み込みます</p>}
+        {progress < 1 && <p className="text-xs text-muted-foreground">初回のみ（約 7.8MB）</p>}
       </div>
     </div>
   );
 }
 
-/** 編集画面。開く履歴書は ?id= で受け取る（中身はブラウザにしかないので、ページは1つだけ書き出す） */
+/** 編集画面。開く履歴書は ?id= で受け取る */
 export function ResumeApp() {
   const id = useSearchParams().get("id") ?? "";
   return <OpenResume key={id} id={id} />;
@@ -93,7 +93,7 @@ function OpenResume({ id }: { id: string }) {
   const router = useRouter();
   const [found] = useState(() => openResume(id));
   useEffect(() => {
-    if (!found) router.replace("/"); // 削除済みなどで見つからないときは一覧へ
+    if (!found) router.replace("/"); // 見つからなければ一覧へ
   }, [found, router]);
   return found ? <Editor id={id} /> : null;
 }
@@ -123,7 +123,7 @@ function Editor({ id }: { id: string }) {
   const blocked = !assets || !check || check.errors.length > 0;
   const isEmpty = !resume.profile.name && !resume.education.length && !resume.jobs.length && !resume.licenses.length;
 
-  // 入力が止まってから PDF を作り直す。スマホではプレビューを開いている間だけ作る
+  // 入力が止まったら PDF を作り直す（スマホはプレビューを開いている間だけ）
   useEffect(() => {
     if (!assets || !showPreview) return;
     let cancelled = false;
@@ -147,7 +147,7 @@ function Editor({ id }: { id: string }) {
   async function save(kind: "a4" | "a3") {
     if (!assets || blocked) return;
     try {
-      // プレビュー用に作った最新の PDF があればそのまま使う（スマホの共有メニューをすぐ出せる）
+      // 最新のプレビューがあれば使い回す（共有メニューをすぐ出せる）
       const pdf = kind === "a4" && preview?.source === resume ? preview.bytes : await makePdf(kind, resume, assets);
       await deliver(pdf, kind === "a3" ? "履歴書_A3.pdf" : "履歴書.pdf");
     } catch (e) {
@@ -157,7 +157,7 @@ function Editor({ id }: { id: string }) {
 
   function exportData() {
     download(new Blob([JSON.stringify(resume, null, 2)], { type: "application/json" }), `${title}.json`);
-    toast.success("データを書き出しました", { description: "別の端末では、一覧のメニューの「ファイルから読み込む」で続きから使えます" });
+    toast.success("データを書き出しました", { description: "別の端末では、一覧の「ファイルから読み込む」で続きを書けます" });
   }
 
   const status = !assets ? "準備中" : busy ? "更新中…" : "A4・2枚";
@@ -226,24 +226,21 @@ function Editor({ id }: { id: string }) {
       <main className="mx-auto grid w-full max-w-7xl flex-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div className="flex min-w-0 flex-col gap-4">
           {isEmpty && (
-            <Empty className="border bg-card">
+            <Empty className="gap-4 border bg-card p-5">
               <EmptyHeader>
                 <EmptyMedia variant="icon">
                   <FileText />
                 </EmptyMedia>
-                <EmptyTitle className="text-lg">
-                {/* 言葉の途中で折り返さないよう、まとまりごとに区切る */}
-                <span className="inline-block">厚生労働省様式の履歴書を、</span>
-                <span className="inline-block">そのまま PDF に</span>
-              </EmptyTitle>
+                <EmptyTitle>空の履歴書です</EmptyTitle>
                 <EmptyDescription>
-                  入力するだけで、公式の様式に書き込んだ履歴書ができます。無料・登録不要で、入力内容はこの端末の外に送信しません。
+                  <span className="inline-block">下の項目から入力するか、</span>
+                  <span className="inline-block">見本を入れて試せます。</span>
                 </EmptyDescription>
               </EmptyHeader>
               <EmptyContent>
                 <Button className="h-11 px-5 text-base sm:h-9 sm:text-sm" onClick={() => setResume(structuredClone(SAMPLE))}>
                   <Sparkles data-icon="inline-start" />
-                  見本で試す
+                  見本を入れる
                 </Button>
               </EmptyContent>
             </Empty>
@@ -316,7 +313,7 @@ function Editor({ id }: { id: string }) {
           <DrawerContent>
             <DrawerHeader>
               <DrawerTitle>プレビュー</DrawerTitle>
-              <DrawerDescription>{busy ? "更新中…" : "A4・2枚。保存すると、ファイルへの保存や LINE・メールでの送信を選べます"}</DrawerDescription>
+              <DrawerDescription>{busy ? "更新中…" : "A4・2枚。保存時に、ファイル保存や LINE・メール送信を選べます"}</DrawerDescription>
             </DrawerHeader>
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
               <PdfPreview bytes={preview?.bytes ?? null} fallback={<PreviewLoading progress={progress} />} updating={busy} />
@@ -339,7 +336,7 @@ function Editor({ id }: { id: string }) {
           <AlertDialogHeader>
             <AlertDialogTitle>この履歴書の内容をすべて消しますか？</AlertDialogTitle>
             <AlertDialogDescription>
-              入力内容と写真が消えます。残しておきたい場合は、先に一覧で複製するか、「データを書き出す」で保存してください。
+              入力内容と写真が消えます。残したいときは、先に一覧で複製してください。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

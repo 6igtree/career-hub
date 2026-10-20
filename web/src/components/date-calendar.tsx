@@ -5,7 +5,7 @@ import { Calendar } from "@/components/ui/calendar";
 
 const THIS_YEAR = new Date().getFullYear();
 
-/** 日付欄のカレンダー。年と月はプルダウンで移れる。date-field から必要になったときだけ読み込む */
+/** 日付欄のカレンダー（年と月はプルダウンで移れる）。date-field から後で読み込む */
 export default function DateCalendar({ selected, defaultMonth, onSelect }: {
   selected?: Date;
   defaultMonth?: Date;

@@ -11,9 +11,8 @@ export function PdfFrame({ bytes }: { bytes: Uint8Array }) {
 }
 
 /**
- * スマホ向け：PDF の各ページを画像として描く。
- * スマホのブラウザはページ内に PDF を表示できない（iPhone は1ページ目だけ、Android はダウンロードになる）ため。
- * 最初のページを描き終えるまでは fallback を出し、作り直している間は前のページの上に「更新しています…」を重ねる
+ * スマホ向け：PDF の各ページを画像にして描く（スマホのブラウザはページ内に PDF を表示できない）。
+ * 描き終えるまでは fallback、作り直している間は前のページに「更新中…」を重ねる
  */
 export function PdfPreview({ bytes, fallback, updating = false }: { bytes: Uint8Array | null; fallback: React.ReactNode; updating?: boolean }) {
   const box = useRef<HTMLDivElement>(null);
@@ -29,7 +28,7 @@ export function PdfPreview({ bytes, fallback, updating = false }: { bytes: Uint8
       try {
         const pdfjs = await import("pdfjs-dist");
         pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-        // pdf.js は受け取ったデータを作業用スレッドに渡して使えなくするので、複製を渡す
+        // pdf.js は渡したデータを使えなくするので、複製を渡す
         const task = pdfjs.getDocument({ data: bytes.slice() });
         const doc = await task.promise;
         const width = el.clientWidth || 600;
@@ -69,11 +68,11 @@ export function PdfPreview({ bytes, fallback, updating = false }: { bytes: Uint8
   return (
     <div className="relative">
       {rendered && busy && (
-        // 画面をスクロールしても見えるよう上に貼りつけ、ページは押し下げない
+        // スクロールしても見えるよう上に貼りつける（ページは押し下げない）
         <div className="pointer-events-none sticky top-2 z-10 -mb-8 flex h-8 justify-center" role="status">
           <span className="flex items-center gap-1.5 rounded-full bg-background/95 px-3 text-xs shadow-sm ring-1 ring-foreground/10">
             <Loader2 className="size-3.5 animate-spin text-primary" aria-hidden />
-            更新しています…
+            更新中…
           </span>
         </div>
       )}

@@ -13,7 +13,7 @@ const OPTIONS = [
   { value: "free", label: "自分で書く" },
 ];
 
-/** 性別。様式では記入は任意なので「記入しない」を先頭に置き、自由に書くこともできる */
+/** 性別（任意）。「記入しない」を先頭に置き、自由記入もできる */
 export function GenderField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const id = useId();
   const [freeChosen, setFreeChosen] = useState(false);

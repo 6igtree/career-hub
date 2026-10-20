@@ -1,5 +1,4 @@
-// 入力内容をブラウザの中（localStorage）だけに保存する。サーバーには送らない。
-// 履歴書はいくつでも保存でき、一覧（名前と更新日時）と中身を別々のキーに持つ
+// 入力内容はブラウザの中（localStorage）だけに保存する。一覧（名前と更新日時）と中身は別のキーに持つ
 import { useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { emptyResume, toResume, type Resume } from "./resume";
@@ -24,10 +23,10 @@ function write(key: string, value: unknown) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    // 容量不足やプライベートブラウズで保存できなくても、入力は続けられる。気づけるよう一度だけ知らせる
+    // 保存できなくても入力は続けられる。気づけるよう一度だけ知らせる
     if (!warned) {
       warned = true;
-      toast.error("この端末に保存できませんでした", { description: "保存できる量を超えたかもしれません。使わない履歴書を削除してください" });
+      toast.error("この端末に保存できませんでした", { description: "容量が足りないかもしれません。使わない履歴書を削除してください" });
     }
   }
 }

@@ -27,7 +27,7 @@ import { createResume, deleteResume, duplicateResume, getResume, useResumeList, 
 
 export const editHref = (id: string) => `/edit/?id=${id}`;
 
-// 書き出したページには保存内容が入っていないので、ブラウザで読み込むまでは一覧を出さない（空の案内が一瞬見えないように）
+// 保存内容はブラウザにしかないので、読み込むまで一覧を出さない（空の案内のちらつき防止）
 const noop = () => () => {};
 const useLoaded = () => useSyncExternalStore(noop, () => true, () => false);
 
@@ -48,7 +48,7 @@ function ResumeCard({ saved, onRename, onDelete }: { saved: Saved; onRename: () 
       </ItemMedia>
       <ItemContent className="wrap-anywhere">
         <ItemTitle className="text-base sm:text-sm">
-          {/* カードのどこを押しても開けるよう、リンクの押せる範囲をカード全体に広げる */}
+          {/* リンクの押せる範囲をカード全体に広げる */}
           <Link
             href={editHref(saved.id)}
             className="outline-none after:absolute after:inset-0 after:rounded-lg focus-visible:after:ring-3 focus-visible:after:ring-ring/50"
@@ -57,7 +57,7 @@ function ResumeCard({ saved, onRename, onDelete }: { saved: Saved; onRename: () 
           </Link>
         </ItemTitle>
         <ItemDescription>
-          {name || "氏名は未入力"} ・ {updatedLabel(saved.updatedAt)} 更新
+          {name || "氏名未入力"} ・ {updatedLabel(saved.updatedAt)} 更新
         </ItemDescription>
       </ItemContent>
       <ItemActions className="relative z-10">
@@ -108,7 +108,7 @@ export function ResumeList() {
       createResume(toResume(JSON.parse(await file.text())), file.name.replace(/\.json$/i, "") || undefined);
       toast.success("読み込みました");
     } catch {
-      toast.error("このファイルは読み込めませんでした", { description: "「データを書き出す」で保存した JSON ファイルを選んでください" });
+      toast.error("このファイルは読み込めませんでした", { description: "書き出した JSON ファイルを選んでください" });
     }
   }
 
@@ -145,12 +145,12 @@ export function ResumeList() {
                 <FileText />
               </EmptyMedia>
               <EmptyTitle className="text-lg">
-                {/* 言葉の途中で折り返さないよう、まとまりごとに区切る */}
+                {/* 言葉の途中で折り返さない */}
                 <span className="inline-block">厚生労働省様式の履歴書を、</span>
                 <span className="inline-block">そのまま PDF に</span>
               </EmptyTitle>
               <EmptyDescription>
-                入力するだけで、公式の様式に書き込んだ履歴書ができます。応募先ごとにいくつでも保存できます。無料・登録不要で、入力内容はこの端末の外に送信しません。
+                入力するだけで、公式の様式どおりの履歴書ができます。無料・登録不要で、入力内容は外に送信しません。
               </EmptyDescription>
             </EmptyHeader>
             <EmptyContent className="sm:flex-row sm:justify-center">
@@ -179,7 +179,7 @@ export function ResumeList() {
               ))}
             </ItemGroup>
             <p className="text-xs text-muted-foreground">
-              この端末のブラウザに保存しています。ほかの端末で続けるときは、編集画面の「データを書き出す」で保存したファイルを、右上のメニューから読み込んでください。
+              この端末のブラウザに保存しています。別の端末で続けるときは、書き出したファイルを右上のメニューから読み込みます。
             </p>
           </div>
         )}

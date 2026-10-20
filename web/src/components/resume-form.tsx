@@ -22,10 +22,10 @@ import { YearMonth } from "@/components/year-month";
 import { blankEntry, blankJob, byDate, formatYm, type Address, type Counts, type Layout, type Resume } from "@/lib/resume";
 import { updateResume, useResume } from "@/lib/store";
 
-// 入力欄の高さと文字サイズは components/ui 側でそろえている（スマホ 44px・16px／パソコン 36px・14px）
+// 入力欄の高さと文字サイズは components/ui 側でそろえる（スマホ 44px・16px／PC 36px・14px）
 const LABEL = "text-[15px] sm:text-sm";
 
-// 電話番号の部品は国ごとの規則表（圧縮後 30KB ほど）を含むので、現住所の欄を開いたときに読み込む
+// 電話番号の部品は規則表が大きい（約 30KB）ので、現住所を開いたときに読み込む
 const PhoneField = dynamic(() => import("@/components/phone-field").then((m) => m.PhoneField), {
   ssr: false,
   loading: () => (
@@ -39,14 +39,14 @@ const PhoneField = dynamic(() => import("@/components/phone-field").then((m) => 
 type TextFieldProps = Omit<React.ComponentProps<typeof Input>, "onChange"> & {
   label: string;
   description?: string;
-  addon?: React.ReactNode; // 入力欄の先頭に置く記号やアイコン（〒 など）
+  addon?: React.ReactNode; // 先頭に置く記号やアイコン（〒 など）
   format?: (value: string) => string; // 打った値を整える（郵便番号のハイフンなど）
   onChange: (value: string) => void;
 };
 
 function TextField({ label, description, addon, format, className, onChange, ...props }: TextFieldProps) {
   const id = useId();
-  // 日本語入力で変換している途中に値を書き換えると変換が壊れるので、確定してから整える
+  // 変換中に書き換えると日本語入力が壊れるので、確定してから整える
   const input = {
     id,
     onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -72,8 +72,7 @@ function TextField({ label, description, addon, format, className, onChange, ...
   );
 }
 
-// 国内の郵便番号は必ず数字7桁（3桁-4桁）。7つそろったらハイフンを入れる。
-// 3桁の時点で入れないのは、海外の郵便番号（アメリカの5桁など）を崩さないため
+// 郵便番号は7桁そろったらハイフンを入れる（3桁目で入れると海外の5桁などが崩れる）
 function formatPostal(v: string) {
   const d = v.normalize("NFKC").replace(/[〒\s\-‐‑‒–—―−ー]/g, "");
   return /^\d{7}$/.test(d) ? `${d.slice(0, 3)}-${d.slice(3)}` : v;
@@ -211,7 +210,7 @@ function JobList() {
 
   return (
     <div className="flex flex-col gap-2">
-      {jobs.length === 0 && <p className="py-1 text-sm text-muted-foreground">まだありません。職歴がなければ空けておけます</p>}
+      {jobs.length === 0 && <p className="py-1 text-sm text-muted-foreground">職歴がなければ空けておけます</p>}
       {jobs.map((x, i) => (
         <EntryRow
           key={i}
@@ -410,7 +409,7 @@ export function ResumeForm({ counts, layout }: { counts: Counts | null; layout: 
         </AccordionTrigger>
         <AccordionContent>
           <div className="flex flex-col gap-6 pt-1 pb-4">
-            <p className="text-sm text-muted-foreground">年月の古い順に自動で並びます。様式の「学歴」「職歴」の見出しと最後の「以上」も1行ずつ使います。</p>
+            <p className="text-sm text-muted-foreground">年月の古い順に並びます。「学歴」「職歴」の見出しと最後の「以上」も1行ずつ使います。</p>
             <section className="flex flex-col gap-2">
               <h3 className="text-sm font-semibold">学歴</h3>
               <EntryList list="education" label="学歴" placeholder="〇〇大学 工学部 情報工学科 卒業" />
@@ -467,7 +466,7 @@ export function ResumeForm({ counts, layout }: { counts: Counts | null; layout: 
                   <InputGroupText className="ml-auto tabular-nums">{motivationLength} 文字</InputGroupText>
                 </InputGroupAddon>
               </InputGroup>
-              <FieldDescription>長い文章は、欄に収まるまで文字を小さくします</FieldDescription>
+              <FieldDescription>長い文章は欄に合わせて文字を小さくします</FieldDescription>
             </Field>
             <Field>
               <FieldLabel htmlFor={requestId} className={cn(LABEL, "w-full")}>
@@ -485,7 +484,7 @@ export function ResumeForm({ counts, layout }: { counts: Counts | null; layout: 
                 value={resume.resume.request}
                 onChange={(e) => updateResume((r) => void (r.resume.request = e.target.value))}
               />
-              <FieldDescription>特に希望がなければ「貴社規定に従います。」と書くのが一般的です</FieldDescription>
+              <FieldDescription>特になければ「貴社規定に従います。」と書くのが一般的です</FieldDescription>
             </Field>
           </div>
         </AccordionContent>
