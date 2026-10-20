@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Copy, FileText, FileUp, FolderInput, FolderOpen, FolderPlus, MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { ChevronDown, Copy, FileText, FileUp, Folder as FolderIcon, FolderCog, FolderInput, FolderOpen, FolderPlus, MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import {
@@ -36,6 +36,7 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTi
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { EditSheet } from "@/components/edit-sheet";
 import { NameSheet, RenameSheet } from "@/components/rename-sheet";
 import { Brand } from "@/components/site";
 import { SAMPLE, sectionStatus, toResume, type Resume } from "@/lib/resume";
@@ -216,6 +217,7 @@ export function ResumeList() {
   const [deleting, setDeleting] = useState<Saved | null>(null);
   const [naming, setNaming] = useState<Naming | null>(null);
   const [deletingFolder, setDeletingFolder] = useState<Folder | null>(null);
+  const [managing, setManaging] = useState(false);
   const importInput = useRef<HTMLInputElement>(null);
   const folderBar = useRef<HTMLDivElement>(null);
   // 消したフォルダが開いたままにならないよう、無ければ「すべて」
@@ -314,7 +316,7 @@ export function ResumeList() {
               </ToggleGroup>
             </div>
             <DropdownMenu>
-              <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="size-9 shrink-0 sm:size-8" aria-label="フォルダの一覧" />}>
+              <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="size-9 shrink-0 sm:size-8" aria-label="フォルダの一覧と整理" />}>
                 <ChevronDown />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64 sm:w-56">
@@ -326,23 +328,12 @@ export function ResumeList() {
                     </DropdownMenuRadioItem>
                   ))}
                 </DropdownMenuRadioGroup>
-                {folder && (
-                  <>
-                    <DropdownMenuSeparator />
-                    {/* 下の2つは、開いているフォルダに対する操作 */}
-                    <DropdownMenuGroup>
-                      <DropdownMenuLabel className="truncate">「{folder.name}」</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => setNaming({ kind: "rename", folder })}>
-                        <Pencil />
-                        名前を変える
-                      </DropdownMenuItem>
-                      <DropdownMenuItem variant="destructive" onClick={() => setDeletingFolder(folder)}>
-                        <Trash2 />
-                        削除
-                      </DropdownMenuItem>
-                    </DropdownMenuGroup>
-                  </>
-                )}
+                <DropdownMenuSeparator />
+                {/* 名前の変更と削除は、どのフォルダを開いていても、ここからできる */}
+                <DropdownMenuItem onClick={() => setManaging(true)}>
+                  <FolderCog />
+                  フォルダを整理
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -434,6 +425,60 @@ export function ResumeList() {
         />
       )}
 
+      <EditSheet
+        open={managing}
+        onOpenChange={setManaging}
+        title="フォルダを整理"
+        description="フォルダを削除しても、中の履歴書は消えません。"
+        footer={
+          <Button variant="ghost" className="h-11 flex-1 sm:h-9 sm:flex-none" onClick={() => setManaging(false)}>
+            閉じる
+          </Button>
+        }
+      >
+        {/* パソコンの画面は中で流れないので、多いときはここで流す */}
+        <ItemGroup className="gap-2 lg:max-h-[60dvh] lg:overflow-y-auto">
+          {views.slice(1).map((f) => (
+            <Item key={f.id} role="listitem" variant="outline" size="sm" className="flex-nowrap">
+              <ItemMedia variant="icon" className="size-8 rounded-md bg-primary/10 text-primary">
+                <FolderIcon className="size-4" />
+              </ItemMedia>
+              <ItemContent className="min-w-0">
+                <ItemTitle className="block w-full truncate">{f.name}</ItemTitle>
+                <ItemDescription>{f.count}件</ItemDescription>
+              </ItemContent>
+              {/* 名前の変更・削除は、この画面を閉じてから次の画面を出す（画面を重ねない） */}
+              <ItemActions className="gap-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-11 sm:size-8"
+                  aria-label={`「${f.name}」の名前を変える`}
+                  onClick={() => {
+                    setManaging(false);
+                    setNaming({ kind: "rename", folder: f });
+                  }}
+                >
+                  <Pencil />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-11 text-destructive hover:text-destructive sm:size-8"
+                  aria-label={`「${f.name}」を削除`}
+                  onClick={() => {
+                    setManaging(false);
+                    setDeletingFolder(f);
+                  }}
+                >
+                  <Trash2 />
+                </Button>
+              </ItemActions>
+            </Item>
+          ))}
+        </ItemGroup>
+      </EditSheet>
+
       <AlertDialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -470,8 +515,9 @@ export function ResumeList() {
               variant="destructive"
               onClick={() => {
                 if (deletingFolder) deleteFolder(deletingFolder.id);
+                // 開いているフォルダを消したときだけ「すべて」に戻す
+                if (deletingFolder?.id === folder?.id) select(ALL);
                 setDeletingFolder(null);
-                select(ALL);
                 toast("フォルダを削除しました");
               }}
             >
