@@ -21,7 +21,7 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTi
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RenameSheet } from "@/components/rename-sheet";
-import { Brand, SiteFooter } from "@/components/site";
+import { Brand } from "@/components/site";
 import { SAMPLE, toResume, type Resume } from "@/lib/resume";
 import { createResume, deleteResume, duplicateResume, editHref, getResume, useResumeList, type Saved } from "@/lib/store";
 
@@ -182,7 +182,6 @@ export function ResumeList() {
         )}
       </main>
 
-      <SiteFooter className="max-w-3xl" />
 
       {renaming && <RenameSheet id={renaming.id} title={renaming.title} onClose={() => setRenaming(null)} />}
 
