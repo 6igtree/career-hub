@@ -9,9 +9,9 @@ kana = "やまだ たろう"
 birth = "1995-04-01"
 gender = ""                # 任意。空なら欄ごと非表示
 photo = ""                 # 写真のパス。career.toml からの相対で、例: "photo.jpg"（photo.* は git 管理外）。空なら枠だけ
-postal = "700-0000"
-address = "岡山県岡山市北区〇〇町1-2-3"
-address_kana = "おかやまけんおかやましきたく〇〇ちょう"
+postal = "100-0005"
+address = "東京都千代田区丸の内1-9-1"
+address_kana = "とうきょうとちよだくまるのうち"
 phone = "090-0000-0000"
 email = "taro@example.com"   # 様式にメール欄がないので電話欄の下に入る
 

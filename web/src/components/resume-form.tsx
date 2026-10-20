@@ -88,7 +88,7 @@ function AddressFields({ value, onChange, autofill }: { value: Address; onChange
         value={value.postal}
         format={formatPostal}
         onChange={(v) => onChange("postal", v)}
-        placeholder="700-0000"
+        placeholder="100-0005"
         inputMode="numeric"
         autoComplete={ac("postal-code")}
       />
