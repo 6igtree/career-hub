@@ -3,8 +3,7 @@
 import { useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Copy, FileText, FolderOpen, MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
-import { cn } from "cn";
+import { Copy, FileText, FolderOpen, MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -47,23 +46,17 @@ const SECTIONS = [
 ] as const;
 
 function ResumeCard({ saved, onRename, onDelete }: { saved: Saved; onRename: () => void; onDelete: () => void }) {
-  const resume = getResume(saved.id);
-  const status = sectionStatus(resume);
+  const status = sectionStatus(getResume(saved.id));
   const missing = SECTIONS.filter(([key]) => !status[key]).map(([, label]) => label);
+  // 直すところがあるときだけ出す（入力済みなら何も出さない）
+  const todo = missing.length === SECTIONS.length ? "まだ入力していません" : missing.length ? `未入力：${missing.join("・")}` : null;
   return (
     <Item variant="outline" className="relative bg-card hover:bg-muted/60">
-      {/* 写真欄と同じ縦横比の枠。写真があれば写真、なければ書類の印 */}
-      <ItemMedia variant="image" className="aspect-[30.2/38.7] h-auto w-10 rounded-sm bg-background text-muted-foreground ring-1 ring-foreground/10">
-        {resume.photo ? (
-          // data URL の写真なので next/image の最適化は使えない
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={resume.photo} alt="" />
-        ) : (
-          <FileText className="size-4" aria-hidden />
-        )}
+      <ItemMedia variant="icon" className="size-10 rounded-lg bg-primary/10 text-primary">
+        <FileText className="size-5" />
       </ItemMedia>
       <ItemContent className="wrap-anywhere">
-        <ItemTitle className="text-base font-semibold sm:text-sm">
+        <ItemTitle className="text-base sm:text-sm">
           {/* リンクの押せる範囲をカード全体に広げる */}
           <Link
             href={editHref(saved.id)}
@@ -72,20 +65,10 @@ function ResumeCard({ saved, onRename, onDelete }: { saved: Saved; onRename: () 
             {saved.title}
           </Link>
         </ItemTitle>
-        {/* 見分けに役立つ入力の状況を先に、更新日時は小さく */}
-        <ItemDescription className={cn(missing.length === 0 && "text-primary")}>
-          {missing.length === 0 ? (
-            <>
-              <Check className="mr-1 inline size-3.5 align-[-2px]" aria-hidden />
-              主な項目は入力済み
-            </>
-          ) : missing.length === SECTIONS.length ? (
-            "まだ入力していません"
-          ) : (
-            `未入力：${missing.join("・")}`
-          )}
+        <ItemDescription className="flex flex-wrap gap-x-3">
+          <span>{updatedLabel(saved.updatedAt)}に更新</span>
+          {todo && <span>{todo}</span>}
         </ItemDescription>
-        <p className="text-xs text-muted-foreground">{updatedLabel(saved.updatedAt)}に更新</p>
       </ItemContent>
       <ItemActions className="relative z-10">
         <DropdownMenu>
