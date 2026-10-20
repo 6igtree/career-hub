@@ -10,7 +10,7 @@ export function Brand() {
       </span>
       <div className="min-w-0 leading-tight">
         <h1 className="truncate text-sm font-semibold">厚生労働省様式の履歴書</h1>
-        <p className="truncate text-xs text-muted-foreground">career-hub</p>
+        <p className="truncate text-xs text-muted-foreground">ResumeDocs</p>
       </div>
     </div>
   );

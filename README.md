@@ -1,4 +1,4 @@
-# career-hub
+# ResumeDocs
 
 厚生労働省の「履歴書様式例」どおりの履歴書を、ブラウザで入力するだけで PDF にできるツールです。
 
@@ -24,7 +24,7 @@
 
 ## 使い方
 
-1. [career-hub](https://career-hub-one-dusky.vercel.app) を開いて「新しく作る」を押す（試すだけなら「見本で試す」）
+1. [ResumeDocs](https://career-hub-one-dusky.vercel.app) を開いて「新しく作る」を押す（試すだけなら「見本で試す」）
 2. 基本情報・現住所・学歴・職歴などを入力する。パソコンでは画面の右側、スマホでは「プレビュー」で仕上がりを確認できる
 3. 「PDF を保存」を押す
 
@@ -118,7 +118,7 @@ python3 check_form.py
 出典：厚生労働省「厚生労働省履歴書様式例」（[ハローワークインターネットサービス](https://www.hellowork.mhlw.go.jp/member/career_doc01.html)）、[公共データ利用規約（第1.0版）](https://www.digital.go.jp/resources/open_data/public_data_license_v1.0)
 
 - `form/kouroushourirekisho*.pdf` は公式の配布ファイルのまま
-- `form/*.svg` は上記の PDF を career-hub が加工して作成した（`pdftocairo -svg` で変換し、Chrome が整数 px に丸めて拡大しないよう、ルート要素の `width`・`height`・`viewBox` だけを A4 は 794×1123px、A3 は 1588×1123px に広げた。描画内容の座標は変えていない）
+- `form/*.svg` は上記の PDF を ResumeDocs が加工して作成した（`pdftocairo -svg` で変換し、Chrome が整数 px に丸めて拡大しないよう、ルート要素の `width`・`height`・`viewBox` だけを A4 は 794×1123px、A3 は 1588×1123px に広げた。描画内容の座標は変えていない）
 
 `web/public/fonts/ipaexm.ttf` は IPAex明朝で、IPAフォントライセンス v1.0 に従って同梱しています（ライセンス文は同じフォルダ）。
 

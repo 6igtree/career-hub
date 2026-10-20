@@ -9,7 +9,7 @@ export const metadata: Metadata = { alternates: { canonical: "/" } };
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  name: "career-hub",
+  name: "ResumeDocs",
   alternateName: "厚生労働省様式の履歴書",
   url: `${SITE_URL}/`,
   description: SITE_DESCRIPTION,
