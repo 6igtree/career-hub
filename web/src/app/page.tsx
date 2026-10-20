@@ -149,7 +149,7 @@ export default function Page() {
               <ItemGroup className="mt-8 gap-7">
                 {STEPS.map(({ title, text }, i) => (
                   <Item key={title} role="listitem" className="items-start gap-3 p-0">
-                    {/* 印鑑のような朱の丸で順番を示す */}
+                    {/* 丸で順番を示す */}
                     <ItemMedia className="size-9 rounded-full border-[1.5px] border-primary text-base font-semibold text-primary group-has-data-[slot=item-description]/item:translate-y-0">
                       {i + 1}
                     </ItemMedia>
