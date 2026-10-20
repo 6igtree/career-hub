@@ -93,7 +93,7 @@ function OpenResume({ id }: { id: string }) {
   const router = useRouter();
   const [found] = useState(() => openResume(id));
   useEffect(() => {
-    if (!found) router.replace("/"); // 見つからなければ一覧へ
+    if (!found) router.replace("/app/"); // 見つからなければ一覧へ
   }, [found, router]);
   return found ? <Editor id={id} /> : null;
 }
@@ -166,7 +166,7 @@ function Editor({ id }: { id: string }) {
     <>
       <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-1.5 px-2 sm:gap-3 sm:px-6">
-          <Link href="/" aria-label="一覧へ戻る" className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "size-11 shrink-0 sm:size-8")}>
+          <Link href="/app/" aria-label="一覧へ戻る" className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "size-11 shrink-0 sm:size-8")}>
             <ChevronLeft className="size-5 sm:size-4" />
           </Link>
           <div className="min-w-0 leading-tight">

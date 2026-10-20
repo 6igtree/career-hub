@@ -5,6 +5,8 @@ import { emptyResume, toResume, type Resume } from "./resume";
 
 export type Saved = { id: string; title: string; updatedAt: number };
 
+export const editHref = (id: string) => `/edit/?id=${id}`;
+
 const LIST_KEY = "career-hub:list";
 const OLD_KEY = "career-hub"; // 1つだけ保存していたころのキー
 const resumeKey = (id: string) => `career-hub:resume:${id}`;

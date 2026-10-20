@@ -9,7 +9,9 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "履歴書",
     description: "厚生労働省様式の履歴書をブラウザでつくる",
     lang: "ja",
-    start_url: "/",
+    id: "/", // 開く場所を変えても、追加済みのアプリと同じものとして扱われるようにする
+    start_url: "/app/", // 毎日使う人は説明のページを通らず一覧から始める
+    scope: "/", // 編集ページもアプリの中で開く（省くと /app/ の下だけになる）
     display: "standalone",
     background_color: "#f8f4ec",
     theme_color: "#f8f4ec",

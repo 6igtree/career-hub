@@ -23,9 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RenameSheet } from "@/components/rename-sheet";
 import { Brand, SiteFooter } from "@/components/site";
 import { SAMPLE, toResume, type Resume } from "@/lib/resume";
-import { createResume, deleteResume, duplicateResume, getResume, useResumeList, type Saved } from "@/lib/store";
-
-export const editHref = (id: string) => `/edit/?id=${id}`;
+import { createResume, deleteResume, duplicateResume, editHref, getResume, useResumeList, type Saved } from "@/lib/store";
 
 // 保存内容はブラウザにしかないので、読み込むまで一覧を出さない（空の案内のちらつき防止）
 const noop = () => () => {};
@@ -91,8 +89,8 @@ function ResumeCard({ saved, onRename, onDelete }: { saved: Saved; onRename: () 
   );
 }
 
-/** 保存した履歴書の一覧（トップページ） */
-export function ResumeList({ children }: { children?: React.ReactNode }) {
+/** 保存した履歴書の一覧（/app/） */
+export function ResumeList() {
   const loaded = useLoaded();
   const list = useResumeList();
   const router = useRouter();
@@ -131,26 +129,32 @@ export function ResumeList({ children }: { children?: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:px-6">
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-4 py-6 sm:px-6">
+        <div className="flex min-h-11 items-center justify-between gap-3 sm:min-h-9">
+          <h1 className="text-lg font-semibold">保存した履歴書</h1>
+          {loaded && list.length > 0 && (
+            <Button className="h-11 sm:h-9" onClick={() => create()}>
+              <Plus data-icon="inline-start" />
+              新しく作る
+            </Button>
+          )}
+        </div>
         {!loaded ? (
           <div className="flex flex-col gap-3">
-            <Skeleton className="h-9 w-40" />
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-20 w-full" />
           </div>
         ) : list.length === 0 ? (
-          <Empty className="border bg-card">
+          <Empty className="flex-none border bg-card">
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <FileText />
               </EmptyMedia>
-              <EmptyTitle className="text-lg">
-                {/* 言葉の途中で折り返さない */}
-                <span className="inline-block">厚生労働省様式の履歴書を、</span>
-                <span className="inline-block">そのまま PDF に</span>
-              </EmptyTitle>
+              <EmptyTitle>まだ履歴書がありません</EmptyTitle>
               <EmptyDescription>
-                入力するだけで、公式の様式どおりの履歴書ができます。無料・登録不要で、入力内容は外に送信しません。
+                {/* 言葉の途中で折り返さない */}
+                <span className="inline-block">新しく作るか、</span>
+                <span className="inline-block">見本の内容で試してみてください。</span>
               </EmptyDescription>
             </EmptyHeader>
             <EmptyContent className="sm:flex-row sm:justify-center">
@@ -165,14 +169,7 @@ export function ResumeList({ children }: { children?: React.ReactNode }) {
             </EmptyContent>
           </Empty>
         ) : (
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold">保存した履歴書</h2>
-              <Button className="h-11 sm:h-9" onClick={() => create()}>
-                <Plus data-icon="inline-start" />
-                新しく作る
-              </Button>
-            </div>
+          <>
             <ItemGroup className="gap-3">
               {sorted.map((s) => (
                 <ResumeCard key={s.id} saved={s} onRename={() => setRenaming(s)} onDelete={() => setDeleting(s)} />
@@ -181,12 +178,11 @@ export function ResumeList({ children }: { children?: React.ReactNode }) {
             <p className="text-xs text-muted-foreground">
               この端末のブラウザに保存しています。別の端末で続けるときは、書き出したファイルを右上のメニューから読み込みます。
             </p>
-          </div>
+          </>
         )}
       </main>
 
-      {children}
-      <SiteFooter />
+      <SiteFooter className="max-w-3xl" />
 
       {renaming && <RenameSheet id={renaming.id} title={renaming.title} onClose={() => setRenaming(null)} />}
 
