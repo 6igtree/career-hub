@@ -1,12 +1,15 @@
 import type { Metadata, Viewport } from "next";
 import { Toaster } from "@/components/ui/sonner";
+import { SITE_DESCRIPTION, SITE_TITLE, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "厚生労働省様式の履歴書｜career-hub",
-  description:
-    "厚生労働省の履歴書様式例どおりの履歴書を、ブラウザで入力するだけで PDF にできます。無料・登録不要で、入力内容は外に送信しません。",
+  metadataBase: new URL(SITE_URL),
+  title: { default: SITE_TITLE, template: "%s｜career-hub" },
+  description: SITE_DESCRIPTION,
   applicationName: "career-hub",
+  openGraph: { type: "website", locale: "ja_JP", siteName: "career-hub", url: "/", title: SITE_TITLE, description: SITE_DESCRIPTION },
+  twitter: { card: "summary_large_image", title: SITE_TITLE, description: SITE_DESCRIPTION },
 };
 
 export const viewport: Viewport = {

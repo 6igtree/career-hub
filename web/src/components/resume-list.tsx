@@ -92,7 +92,7 @@ function ResumeCard({ saved, onRename, onDelete }: { saved: Saved; onRename: () 
 }
 
 /** 保存した履歴書の一覧（トップページ） */
-export function ResumeList() {
+export function ResumeList({ children }: { children?: React.ReactNode }) {
   const loaded = useLoaded();
   const list = useResumeList();
   const router = useRouter();
@@ -167,7 +167,7 @@ export function ResumeList() {
         ) : (
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between gap-3">
-              <h1 className="text-lg font-semibold">保存した履歴書</h1>
+              <h2 className="text-lg font-semibold">保存した履歴書</h2>
               <Button className="h-11 sm:h-9" onClick={() => create()}>
                 <Plus data-icon="inline-start" />
                 新しく作る
@@ -185,6 +185,7 @@ export function ResumeList() {
         )}
       </main>
 
+      {children}
       <SiteFooter />
 
       {renaming && <RenameSheet id={renaming.id} title={renaming.title} onClose={() => setRenaming(null)} />}
