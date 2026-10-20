@@ -11,7 +11,7 @@ const flag = (code: string) => String.fromCodePoint(...[...code].map((c) => 0x1f
 const names = new Intl.DisplayNames(["ja"], { type: "region", style: "short" }); // 「香港」「アメリカ」など短い呼び方
 const collator = new Intl.Collator("ja");
 const entry = (code: CountryCode) => ({ code, name: names.of(code) ?? code, dial: getCountryCallingCode(code) });
-// 選ばれそうな国は日本のすぐ下に並べる。漢字の国名（中国・韓国など）は国名順だと最後に回ってしまうため
+// 選ばれそうな国を先に並べる（漢字の国名は五十音順だと最後に回るため）
 const TOP = (["JP", "US", "CN", "KR", "TW", "HK", "TH", "SG", "PH", "VN", "AU", "CA", "GB", "DE", "FR", "BR"] as const).map(entry);
 const REST = getCountries()
   .filter((code) => !TOP.some((c) => c.code === code))
@@ -35,7 +35,7 @@ function CountryItem({ c }: { c: ReturnType<typeof entry> }) {
 function format(digits: string, country: CountryCode) {
   if (country === "JP") return digits && new AsYouType("JP").input(digits);
   const national = new AsYouType(country);
-  national.input(digits); // 国内でかけるときだけ付ける先頭の 0 などは、ここで外れる
+  national.input(digits); // 国内用の先頭の 0 などはここで外れる
   const nsn = national.getNumber()?.nationalNumber ?? "";
   if (!nsn) return "";
   const intl = new AsYouType().input(`+${getCountryCallingCode(country)}${nsn}`);
@@ -43,7 +43,7 @@ function format(digits: string, country: CountryCode) {
   return i < 0 ? intl : intl.slice(0, i + 1) + intl.slice(i + 1).replaceAll(" ", "-");
 }
 
-// 値から国を読み取る。国番号のない番号は日本。読み取れないときは undefined
+// 値から国を読み取る（国番号なしは日本、読めなければ undefined）
 function countryOf(value: string): CountryCode | undefined {
   if (!value.startsWith("+")) return value ? "JP" : undefined;
   const t = new AsYouType();
@@ -68,7 +68,7 @@ export function PhoneField({ label, value, onChange, autofill }: {
   function change(raw: string) {
     const t = raw.normalize("NFKC").trim();
     if (t.startsWith("+")) {
-      // 国番号から打ったり、貼り付けたり自動入力したりしたときは、国も合わせる
+      // 「+」から始まる番号（貼り付け・自動入力など）は国も合わせる
       const a = new AsYouType();
       a.input(t);
       const c = a.getCountry();
@@ -95,7 +95,7 @@ export function PhoneField({ label, value, onChange, autofill }: {
           <SelectTrigger aria-label={`${label}の国番号`}>
             <SelectValue />
           </SelectTrigger>
-          {/* 一覧は国番号の部分ではなく電話欄全体の下に、同じ幅で出す */}
+          {/* 一覧は電話欄全体の下に同じ幅で出す */}
           <SelectContent anchor={group} align="start" alignItemWithTrigger={false}>
             {TOP.map((c) => (
               <CountryItem key={c.code} c={c} />
@@ -110,7 +110,7 @@ export function PhoneField({ label, value, onChange, autofill }: {
           id={id}
           type="tel"
           value={shown}
-          // 日本語入力で変換している途中は書き換えず、確定してから整える
+          // 変換中は書き換えず、確定してから整える
           onChange={(e) => ((e.nativeEvent as InputEvent).isComposing ? onChange(prefix + e.target.value) : change(e.target.value))}
           onCompositionEnd={(e) => change(e.currentTarget.value)}
           placeholder={country === "JP" ? "090-0000-0000" : undefined}

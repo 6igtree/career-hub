@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { EditSheet } from "@/components/edit-sheet";
 import { renameResume } from "@/lib/store";
 
-/** 履歴書の名前を変える。開くたびに作り直すので、閉じるときは外から外す */
+/** 履歴書の名前を変える（閉じるときは呼び出し側で外す） */
 export function RenameSheet({ id, title: current, onClose }: { id: string; title: string; onClose: () => void }) {
   const inputId = useId();
   const [title, setTitle] = useState(current);
@@ -43,7 +43,7 @@ export function RenameSheet({ id, title: current, onClose }: { id: string; title
             名前
           </FieldLabel>
           <Input id={inputId} value={title} onChange={(e) => setTitle(e.target.value)} autoFocus />
-          <FieldDescription>一覧で見分けるための名前です。PDF には出ません（例：○○社用）</FieldDescription>
+          <FieldDescription>例：○○社用（PDF には出ません）</FieldDescription>
         </Field>
       </form>
     </EditSheet>

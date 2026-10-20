@@ -6,7 +6,7 @@ import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-// カレンダーは開いたときに初めて使うので後から読み込む。欄に触れた時点で先読みして待たせない
+// カレンダーは後から読み込む（欄に触れた時点で先読み）
 const loadCalendar = () => import("@/components/date-calendar");
 const DateCalendar = dynamic(loadCalendar, { ssr: false, loading: () => <div className="h-80 w-64" /> });
 
@@ -16,10 +16,7 @@ const parse = (s: string) => {
 };
 const format = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-/**
- * 日付を選ぶ（値は "1995-04-01" の形）。押すとカレンダーが開き、年と月はプルダウンで一気に移れる。
- * clearLabel を渡すと、日付を空に戻すボタンを出す
- */
+/** 日付を選ぶ（値は "1995-04-01"）。clearLabel を渡すと、空に戻すボタンを出す */
 export function DateField({
   id,
   value,

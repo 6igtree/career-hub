@@ -5,7 +5,7 @@ export const dynamic = "force-static";
 // スマホで「ホーム画面に追加」したときの名前やアイコン
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "career-hub 履歴書",
+    name: "厚生労働省様式の履歴書",
     short_name: "履歴書",
     description: "厚生労働省様式の履歴書をブラウザでつくる",
     lang: "ja",
