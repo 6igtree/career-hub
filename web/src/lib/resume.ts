@@ -33,8 +33,8 @@ export const emptyResume = (): Resume => ({
 export const SAMPLE: Resume = {
   ...emptyResume(),
   profile: {
-    name: "山田 太郎", kana: "やまだ たろう", birth: "1995-04-01", gender: "", postal: "700-0000",
-    address: "岡山県岡山市北区〇〇町1-2-3", address_kana: "おかやまけんおかやましきたく〇〇ちょう",
+    name: "山田 太郎", kana: "やまだ たろう", birth: "1995-04-01", gender: "", postal: "100-0005",
+    address: "東京都千代田区丸の内1-9-1", address_kana: "とうきょうとちよだくまるのうち",
     phone: "090-0000-0000", email: "taro@example.com",
   },
   education: [
