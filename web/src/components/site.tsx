@@ -1,26 +1,27 @@
+import Link from "next/link";
 import { FileText } from "lucide-react";
 import { cn } from "cn";
 
-/** ヘッダー左のロゴと名前 */
+/** ヘッダー左のロゴと名前。押すとトップ（説明のページ）へ */
 export function Brand() {
   return (
-    <div className="flex min-w-0 items-center gap-2.5">
+    <Link href="/" className="flex min-w-0 items-center gap-2.5 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
       <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
         <FileText className="size-4" aria-hidden />
       </span>
-      <div className="min-w-0 leading-tight">
-        <h1 className="truncate text-sm font-semibold">厚生労働省様式の履歴書</h1>
-        <p className="truncate text-xs text-muted-foreground">ResumeDocs</p>
-      </div>
-    </div>
+      <span className="min-w-0 leading-tight">
+        <span className="block truncate text-sm font-semibold">厚生労働省様式の履歴書</span>
+        <span className="block truncate text-xs text-muted-foreground">ResumeDocs</span>
+      </span>
+    </Link>
   );
 }
 
-/** 出典と注意書き。bottomBar：スマホで画面下に操作バーがあるページ用の余白 */
-export function SiteFooter({ bottomBar = false }: { bottomBar?: boolean }) {
+/** 出典と注意書き。bottomBar：スマホで画面下に操作バーがあるページ用の余白。className：本文の幅に揃える */
+export function SiteFooter({ bottomBar = false, className }: { bottomBar?: boolean; className?: string }) {
   return (
     <footer className="border-t text-xs text-muted-foreground">
-      <div className={cn("mx-auto flex w-full max-w-7xl flex-col gap-1 px-4 pt-6 sm:px-6", bottomBar ? "pb-28 lg:pb-6" : "pb-6")}>
+      <div className={cn("mx-auto flex w-full max-w-7xl flex-col gap-1 px-4 pt-6 sm:px-6", bottomBar ? "pb-28 lg:pb-6" : "pb-6", className)}>
         <p>
           出典：厚生労働省「厚生労働省履歴書様式例」（
           <a className="underline underline-offset-2" href="https://www.hellowork.mhlw.go.jp/member/career_doc01.html">
