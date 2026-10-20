@@ -19,7 +19,7 @@ import { EmailField } from "@/components/email-field";
 import { GenderField } from "@/components/gender-field";
 import { PhotoField } from "@/components/photo-field";
 import { YearMonth } from "@/components/year-month";
-import { blankEntry, blankJob, byDate, formatYm, type Address, type Counts, type Layout, type Resume } from "@/lib/resume";
+import { blankEntry, blankJob, byDate, formatYm, has, sectionStatus, type Address, type Counts, type Layout } from "@/lib/resume";
 import { updateResume, useResume } from "@/lib/store";
 
 // 入力欄の高さと文字サイズは components/ui 側でそろえる（スマホ 44px・16px／PC 36px・14px）
@@ -265,20 +265,6 @@ function JobList() {
       )}
     </div>
   );
-}
-
-const has = (s: string) => s.trim().length > 0;
-
-/** 各項目の主な欄が埋まっているか（目安。保存は止めない） */
-function sectionStatus(r: Resume) {
-  const p = r.profile;
-  return {
-    basic: has(p.name) && has(p.kana) && has(p.birth),
-    address: has(p.postal) && has(p.address) && has(p.phone),
-    history: r.education.some((x) => has(x.text)),
-    licenses: r.licenses.some((x) => has(x.text)),
-    motivation: has(r.resume.motivation),
-  };
 }
 
 /** 閉じていても中身が分かるよう、見出しの下に要約を出す */
