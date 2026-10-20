@@ -42,7 +42,7 @@ import { useIsDesktop } from "@/components/edit-sheet";
 import { PdfFrame, PdfPreview } from "@/components/pdf-preview";
 import { RenameSheet } from "@/components/rename-sheet";
 import { ResumeForm } from "@/components/resume-form";
-import { SiteFooter } from "@/components/site";
+import { FormCredit } from "@/components/site";
 import { documentDate, emptyResume, layoutResume, loadAssets, makePdf, missingChars, SAMPLE, type Assets, type Resume } from "@/lib/resume";
 import { openResume, setResume, useResume, useResumeList } from "@/lib/store";
 
@@ -223,7 +223,7 @@ function Editor({ id }: { id: string }) {
         </div>
       </header>
 
-      <main className="mx-auto grid w-full max-w-7xl flex-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <main className="mx-auto grid w-full max-w-7xl flex-1 gap-6 px-4 pt-6 pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:pb-6">
         <div className="flex min-w-0 flex-col gap-4">
           {isEmpty && (
             <Empty className="gap-4 border bg-card p-5">
@@ -285,14 +285,16 @@ function Editor({ id }: { id: string }) {
                 {status}
               </span>
             </div>
-            <div className="min-h-0 flex-1 px-4 pb-4">
+            <div className="min-h-0 flex-1 px-4">
               {isDesktop && (preview ? <PdfFrame bytes={preview.bytes} /> : <PreviewLoading progress={progress} />)}
             </div>
+            <p className="px-4 py-2.5 text-xs text-muted-foreground">
+              <FormCredit />
+            </p>
           </div>
         </aside>
       </main>
 
-      <SiteFooter bottomBar />
 
       {/* スマホ：画面下に固定する操作バー */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/90 backdrop-blur-md lg:hidden">
@@ -317,6 +319,9 @@ function Editor({ id }: { id: string }) {
             </DrawerHeader>
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
               <PdfPreview bytes={preview?.bytes ?? null} fallback={<PreviewLoading progress={progress} />} updating={busy} />
+              <p className="mt-3 text-xs text-muted-foreground">
+                <FormCredit />
+              </p>
             </div>
             <DrawerFooter className="pt-3">
               <Button className="h-11" disabled={blocked} onClick={() => save("a4")}>

@@ -17,21 +17,39 @@ export function Brand() {
   );
 }
 
-/** 出典と注意書き。bottomBar：スマホで画面下に操作バーがあるページ用の余白。className：本文の幅に揃える */
-export function SiteFooter({ bottomBar = false, className }: { bottomBar?: boolean; className?: string }) {
+const FORM_URL = "https://www.hellowork.mhlw.go.jp/member/career_doc01.html";
+const PDL_URL = "https://www.digital.go.jp/resources/open_data/public_data_license_v1.0";
+
+/** 様式の出典。公共データ利用規約では、加工したら出典に加えて「加工したこと」と「加工した者」も書く */
+export function FormCredit() {
+  // 編集中に押しても入力画面を離れないよう、別のタブで開く。リンクの途中では折り返さない
+  const link = { className: "whitespace-nowrap underline underline-offset-2", target: "_blank", rel: "noopener noreferrer" };
+  return (
+    <>
+      様式：厚生労働省「<a {...link} href={FORM_URL}>厚生労働省履歴書様式例</a>」をもとに ResumeDocs で作成（
+      <a {...link} href={PDL_URL}>
+        公共データ利用規約 第1.0版
+      </a>
+      ）
+    </>
+  );
+}
+
+/** トップの出典と注意書き。className：本文の幅に揃える */
+export function SiteFooter({ className }: { className?: string }) {
   return (
     <footer className="border-t text-xs text-muted-foreground">
-      <div className={cn("mx-auto flex w-full max-w-7xl flex-col gap-1 px-4 pt-6 sm:px-6", bottomBar ? "pb-28 lg:pb-6" : "pb-6", className)}>
+      <div className={cn("mx-auto flex w-full max-w-7xl flex-col gap-1 px-4 pt-6 pb-6 sm:px-6", className)}>
         <p>
           出典：厚生労働省「厚生労働省履歴書様式例」（
-          <a className="underline underline-offset-2" href="https://www.hellowork.mhlw.go.jp/member/career_doc01.html">
+          <a className="underline underline-offset-2" href={FORM_URL}>
             ハローワークインターネットサービス
           </a>
           ）、
-          <a className="underline underline-offset-2" href="https://www.digital.go.jp/resources/open_data/public_data_license_v1.0">
+          <a className="underline underline-offset-2" href={PDL_URL}>
             公共データ利用規約（第1.0版）
           </a>
-          。公式 PDF に記入内容を書き加えて作成しています。
+          。この様式をもとに、記入内容を書き加えて ResumeDocs で作成しています。
         </p>
         <p>
           厚生労働省・ハローワークとは関係のない非公式ツールです。PDF のフォントは IPAex明朝（IPAフォントライセンス）。
