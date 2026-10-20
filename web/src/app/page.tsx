@@ -1,9 +1,15 @@
 /* eslint-disable @next/next/no-img-element -- 静的に書き出すので、next/image の最適化は使えない */
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronDown, FolderOpen } from "lucide-react";
+import { Check, DoorOpen, FileCheckCorner, Files, FolderOpen, Printer, ShieldCheck, Smartphone } from "lucide-react";
 import { cn } from "cn";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Item, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item";
+import { Separator } from "@/components/ui/separator";
 import { Brand, SiteFooter } from "@/components/site";
 import { StartButtons } from "@/components/start-buttons";
 import { SITE_DESCRIPTION, SITE_URL } from "@/lib/site";
@@ -25,13 +31,14 @@ const jsonLd = {
   offers: { "@type": "Offer", price: "0", priceCurrency: "JPY" },
 };
 
+// 順番のない内容なので番号は付けない（番号は「使い方」だけ）
 const FEATURES = [
-  { title: "公式の様式そのまま", text: "厚生労働省が配布している PDF に書き込むので、罫線や見出しが様式とずれません。" },
-  { title: "無料・登録不要", text: "開いてすぐ書き始められます。メールアドレスの登録もいりません。" },
-  { title: "入力内容は外に出ない", text: "入力した内容と写真は、このブラウザの中だけに保存します。サーバーには送りません。" },
-  { title: "スマホで最後まで", text: "入力から PDF の保存までスマホでできます。保存した PDF は LINE やメールでそのまま送れます。" },
-  { title: "応募先ごとに保存", text: "履歴書はいくつでも保存できます。複製して志望動機だけ書き換えれば、2社目からは手早く作れます。" },
-  { title: "写真と用紙", text: "証明写真は写真欄に合わせて中央で切り抜きます。用紙は A4（2枚）と A3（見開き1枚）から選べます。" },
+  { icon: FileCheckCorner, title: "公式の様式そのまま", text: "厚生労働省が配布している PDF に書き込むので、罫線や見出しが様式とずれません。" },
+  { icon: DoorOpen, title: "無料・登録不要", text: "開いてすぐ書き始められます。メールアドレスの登録もいりません。" },
+  { icon: ShieldCheck, title: "入力内容は外に出ない", text: "入力した内容と写真は、このブラウザの中だけに保存します。サーバーには送りません。" },
+  { icon: Smartphone, title: "スマホで最後まで", text: "入力から PDF の保存までスマホでできます。保存した PDF は LINE やメールでそのまま送れます。" },
+  { icon: Files, title: "応募先ごとに保存", text: "履歴書はいくつでも保存できます。複製して志望動機だけ書き換えれば、2社目からは手早く作れます。" },
+  { icon: Printer, title: "A4 でも A3 でも", text: "用紙は A4（2枚）と A3（見開き1枚）から選べます。証明写真は写真欄に合わせて中央で切り抜きます。" },
 ];
 
 const STEPS = [
@@ -55,6 +62,7 @@ const FAQ = [
 ];
 
 const h2 = "font-serif text-2xl font-semibold sm:text-3xl";
+const phone = "w-[44%] max-w-48 overflow-hidden rounded-3xl shadow-lg ring-1 shadow-foreground/10 ring-foreground/10";
 
 /** トップ（説明のページ）。使っている人も見られるよう、自動で一覧へは移さない */
 export default function Page() {
@@ -64,6 +72,7 @@ export default function Page() {
       <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-3 px-4 sm:px-6">
           <Brand />
+          {/* リンクは Button ではなく buttonVariants で見た目だけ合わせる（shadcn の推奨） */}
           <Link href="/app/" className={cn(buttonVariants({ variant: "outline" }), "ml-auto h-11 px-3 sm:h-9")}>
             <FolderOpen data-icon="inline-start" />
             保存した履歴書
@@ -74,8 +83,7 @@ export default function Page() {
       <main className="flex-1">
         <section className="mx-auto grid w-full max-w-5xl items-center gap-12 px-4 pt-10 pb-16 sm:px-6 md:grid-cols-[1fr_18rem] md:gap-14 md:pt-20 lg:grid-cols-[1fr_21rem]">
           <div>
-            <p className="text-sm font-medium text-primary">無料・登録不要・スマホ対応</p>
-            <h1 className="mt-3 font-serif text-[2rem] leading-snug font-semibold sm:text-4xl lg:text-[2.6rem]">
+            <h1 className="font-serif text-[2rem] leading-snug font-semibold sm:text-4xl lg:text-[2.6rem]">
               {/* 言葉の途中で折り返さない */}
               <span className="inline-block">厚生労働省様式の</span>
               <span className="inline-block">履歴書を、</span>
@@ -85,19 +93,29 @@ export default function Page() {
               厚生労働省が配布している「履歴書様式例」の PDF に、入力した内容を書き込みます。罫線や見出しは公式のまま。入力した内容は外部に送りません。
             </p>
             <StartButtons className="mt-8" />
+            <div className="mt-5 flex flex-wrap gap-2">
+              {["無料", "登録不要", "スマホ対応"].map((label) => (
+                <Badge key={label} variant="outline" className="h-6 px-2.5 text-[0.8125rem]">
+                  <Check data-icon="inline-start" className="text-primary" />
+                  {label}
+                </Badge>
+              ))}
+            </div>
           </div>
           <figure className="mx-auto w-full max-w-80 md:max-w-none">
             <div className="relative">
               {/* 後ろの2枚目（A4 では2枚になる） */}
               <div aria-hidden className="absolute inset-0 translate-x-2.5 translate-y-2.5 rotate-[1.5deg] rounded-[3px] bg-card shadow-sm ring-1 ring-foreground/10" />
-              <img
-                src="/lp/resume.webp"
-                width={900}
-                height={1273}
-                fetchPriority="high"
-                alt="見本の内容で作った履歴書の1枚目。厚生労働省の様式例に、氏名・住所・学歴・職歴が書き込まれている"
-                className="relative w-full rounded-[3px] bg-white shadow-[0_18px_40px_-16px_oklch(0.3_0.03_60/0.35)] ring-1 ring-foreground/10"
-              />
+              <AspectRatio ratio={210 / 297} className="overflow-hidden rounded-[3px] bg-white shadow-xl ring-1 shadow-foreground/15 ring-foreground/10">
+                <img
+                  src="/lp/resume.webp"
+                  width={900}
+                  height={1273}
+                  fetchPriority="high"
+                  alt="見本の内容で作った履歴書の1枚目。厚生労働省の様式例に、氏名・住所・学歴・職歴が書き込まれている"
+                  className="size-full object-cover"
+                />
+              </AspectRatio>
             </div>
             <figcaption className="mt-5 text-center text-xs text-muted-foreground">見本で作った1枚目（A4）</figcaption>
           </figure>
@@ -108,90 +126,98 @@ export default function Page() {
             ResumeDocs でできること
           </h2>
           {/* 履歴書の表と同じく、外側を太い線、内側を細い線で区切る */}
-          <ol className="mt-8 grid border-t-2 border-foreground md:grid-cols-2 md:gap-x-10">
-            {FEATURES.map(({ title, text }, i) => (
-              <li key={title} className="grid grid-cols-[2.25rem_1fr] gap-x-2 border-b border-foreground/15 py-5">
-                <span aria-hidden className="font-serif text-lg leading-6 text-primary tabular-nums">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <div>
-                  <h3 className="leading-6 font-semibold">{title}</h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{text}</p>
-                </div>
-              </li>
+          <ItemGroup className="mt-8 grid gap-0 border-t-2 border-foreground md:grid-cols-2 md:gap-x-10">
+            {FEATURES.map(({ icon: Icon, title, text }) => (
+              <Item key={title} role="listitem" className="items-start gap-3 rounded-none border-0 border-b border-foreground/15 px-0 py-5">
+                <ItemMedia variant="icon" className="text-primary">
+                  <Icon aria-hidden className="size-5" />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle className="text-base font-semibold">{title}</ItemTitle>
+                  <ItemDescription className="line-clamp-none leading-relaxed">{text}</ItemDescription>
+                </ItemContent>
+              </Item>
             ))}
-          </ol>
+          </ItemGroup>
         </section>
 
-        <section aria-labelledby="steps" className="border-y bg-card">
+        <section aria-labelledby="steps" className="bg-card">
+          <Separator />
           <div className="mx-auto grid w-full max-w-5xl items-center gap-12 px-4 py-16 sm:px-6 md:grid-cols-[1fr_auto] md:gap-16 md:py-20">
             <div>
               <h2 id="steps" className={h2}>
                 使い方
               </h2>
-              <ol className="mt-8 flex flex-col gap-7">
+              <ItemGroup className="mt-8 gap-7">
                 {STEPS.map(({ title, text }, i) => (
-                  <li key={title} className="grid grid-cols-[2.25rem_1fr] gap-x-3">
+                  <Item key={title} role="listitem" className="items-start gap-3 p-0">
                     {/* 印鑑のような朱の丸で順番を示す */}
-                    <span aria-hidden className="grid size-9 place-items-center rounded-full border-[1.5px] border-primary font-serif text-primary">
+                    <ItemMedia className="size-9 rounded-full border-[1.5px] border-primary font-serif text-base text-primary group-has-data-[slot=item-description]/item:translate-y-0">
                       {i + 1}
-                    </span>
-                    <div>
-                      <h3 className="leading-9 font-semibold">{title}</h3>
-                      <p className="text-sm leading-relaxed text-muted-foreground">{text}</p>
-                    </div>
-                  </li>
+                    </ItemMedia>
+                    <ItemContent>
+                      <ItemTitle className="text-base leading-9 font-semibold">{title}</ItemTitle>
+                      <ItemDescription className="line-clamp-none leading-relaxed">{text}</ItemDescription>
+                    </ItemContent>
+                  </Item>
                 ))}
-              </ol>
+              </ItemGroup>
             </div>
             <div className="flex items-start justify-center gap-4 sm:gap-6">
-              <img
-                src="/lp/form.webp"
-                width={780}
-                height={1688}
-                loading="lazy"
-                alt="スマホの入力画面。氏名・ふりがな・生年月日の欄が並んでいる"
-                className="w-[44%] max-w-48 rounded-3xl shadow-[0_12px_32px_-12px_oklch(0.3_0.03_60/0.3)] ring-1 ring-foreground/10"
-              />
-              <img
-                src="/lp/preview.webp"
-                width={780}
-                height={1688}
-                loading="lazy"
-                alt="スマホのプレビュー画面。保存する PDF の1枚目が表示されている"
-                className="mt-10 w-[44%] max-w-48 rounded-3xl shadow-[0_12px_32px_-12px_oklch(0.3_0.03_60/0.3)] ring-1 ring-foreground/10"
-              />
+              <AspectRatio ratio={390 / 844} className={phone}>
+                <img
+                  src="/lp/form.webp"
+                  width={780}
+                  height={1688}
+                  loading="lazy"
+                  alt="スマホの入力画面。氏名・ふりがな・生年月日の欄が並んでいる"
+                  className="size-full object-cover"
+                />
+              </AspectRatio>
+              <AspectRatio ratio={390 / 844} className={cn(phone, "mt-10")}>
+                <img
+                  src="/lp/preview.webp"
+                  width={780}
+                  height={1688}
+                  loading="lazy"
+                  alt="スマホのプレビュー画面。保存する PDF の1枚目が表示されている"
+                  className="size-full object-cover"
+                />
+              </AspectRatio>
             </div>
           </div>
+          <Separator />
         </section>
 
         <section aria-labelledby="faq" className="mx-auto w-full max-w-5xl px-4 py-16 sm:px-6 md:py-20">
           <h2 id="faq" className={h2}>
             よくある質問
           </h2>
-          <div className="mt-8 max-w-3xl border-t-2 border-foreground">
+          {/* 閉じている答えも HTML に残す（検索エンジンが読め、ページ内検索でも開く） */}
+          <Accordion multiple hiddenUntilFound className="mt-8 max-w-3xl border-t-2 border-foreground">
             {FAQ.map(({ q, a }) => (
-              <details key={q} className="group border-b border-foreground/15">
-                <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 py-3 font-medium [&::-webkit-details-marker]:hidden">
-                  {q}
-                  <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
-                </summary>
-                <p className="pb-4 text-sm leading-relaxed text-muted-foreground">{a}</p>
-              </details>
+              <AccordionItem key={q} value={q} className="border-b border-foreground/15">
+                <AccordionTrigger className="items-center py-4 text-base">{q}</AccordionTrigger>
+                <AccordionContent className="pb-4 leading-relaxed text-muted-foreground">{a}</AccordionContent>
+              </AccordionItem>
             ))}
-          </div>
+          </Accordion>
         </section>
 
-        <section aria-labelledby="start" className="border-t">
-          <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-16 sm:px-6 md:flex-row md:items-center md:justify-between md:py-20">
-            <div>
-              <h2 id="start" className={h2}>
-                今すぐ作れます
-              </h2>
-              <p className="mt-2 text-sm text-muted-foreground">登録はいりません。見本で試してから書き始めることもできます。</p>
-            </div>
-            <StartButtons />
-          </div>
+        <section aria-labelledby="start" className="mx-auto w-full max-w-5xl px-4 pb-16 sm:px-6 md:pb-20">
+          <Card className="gap-6 px-6 py-8 md:flex-row md:items-center md:justify-between md:px-10 md:py-10">
+            <CardHeader className="px-0 md:flex-1">
+              <CardTitle>
+                <h2 id="start" className={h2}>
+                  すぐに書き始められます
+                </h2>
+              </CardTitle>
+              <CardDescription className="mt-1">登録はいりません。見本で試してから、自分の内容に書き換えることもできます。</CardDescription>
+            </CardHeader>
+            <CardContent className="px-0">
+              <StartButtons />
+            </CardContent>
+          </Card>
         </section>
       </main>
 
