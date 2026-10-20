@@ -9,7 +9,7 @@ export function Brand() {
         <FileText className="size-4" aria-hidden />
       </span>
       <div className="min-w-0 leading-tight">
-        <p className="truncate text-sm font-semibold">厚生労働省様式の履歴書</p>
+        <h1 className="truncate text-sm font-semibold">厚生労働省様式の履歴書</h1>
         <p className="truncate text-xs text-muted-foreground">career-hub</p>
       </div>
     </div>
