@@ -3,7 +3,8 @@
 import { useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Copy, FileText, FolderOpen, MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Check, Copy, FileText, FolderOpen, MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { cn } from "cn";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -22,7 +23,7 @@ import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, 
 import { Skeleton } from "@/components/ui/skeleton";
 import { RenameSheet } from "@/components/rename-sheet";
 import { Brand } from "@/components/site";
-import { SAMPLE, toResume, type Resume } from "@/lib/resume";
+import { SAMPLE, sectionStatus, toResume, type Resume } from "@/lib/resume";
 import { createResume, deleteResume, duplicateResume, editHref, getResume, useResumeList, type Saved } from "@/lib/store";
 
 // 保存内容はブラウザにしかないので、読み込むまで一覧を出さない（空の案内のちらつき防止）
@@ -37,15 +38,32 @@ function updatedLabel(time: number) {
   return d.getFullYear() === now.getFullYear() ? md : `${d.getFullYear()}年${md}`;
 }
 
+// 一覧に「あと何を書けばいいか」を出す項目（資格は無い人もいるので数えない）
+const SECTIONS = [
+  ["basic", "基本情報"],
+  ["address", "現住所"],
+  ["history", "学歴・職歴"],
+  ["motivation", "志望動機"],
+] as const;
+
 function ResumeCard({ saved, onRename, onDelete }: { saved: Saved; onRename: () => void; onDelete: () => void }) {
-  const name = getResume(saved.id).profile.name;
+  const resume = getResume(saved.id);
+  const status = sectionStatus(resume);
+  const missing = SECTIONS.filter(([key]) => !status[key]).map(([, label]) => label);
   return (
     <Item variant="outline" className="relative bg-card hover:bg-muted/60">
-      <ItemMedia variant="icon" className="border-transparent bg-primary/10 text-primary">
-        <FileText />
+      {/* 写真欄と同じ縦横比の枠。写真があれば写真、なければ書類の印 */}
+      <ItemMedia variant="image" className="aspect-[30.2/38.7] h-auto w-10 rounded-sm bg-background text-muted-foreground ring-1 ring-foreground/10">
+        {resume.photo ? (
+          // data URL の写真なので next/image の最適化は使えない
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={resume.photo} alt="" />
+        ) : (
+          <FileText className="size-4" aria-hidden />
+        )}
       </ItemMedia>
       <ItemContent className="wrap-anywhere">
-        <ItemTitle className="text-base sm:text-sm">
+        <ItemTitle className="text-base font-semibold sm:text-sm">
           {/* リンクの押せる範囲をカード全体に広げる */}
           <Link
             href={editHref(saved.id)}
@@ -54,9 +72,20 @@ function ResumeCard({ saved, onRename, onDelete }: { saved: Saved; onRename: () 
             {saved.title}
           </Link>
         </ItemTitle>
-        <ItemDescription>
-          {name || "氏名未入力"} ・ {updatedLabel(saved.updatedAt)} 更新
+        {/* 見分けに役立つ入力の状況を先に、更新日時は小さく */}
+        <ItemDescription className={cn(missing.length === 0 && "text-primary")}>
+          {missing.length === 0 ? (
+            <>
+              <Check className="mr-1 inline size-3.5 align-[-2px]" aria-hidden />
+              主な項目は入力済み
+            </>
+          ) : missing.length === SECTIONS.length ? (
+            "まだ入力していません"
+          ) : (
+            `未入力：${missing.join("・")}`
+          )}
         </ItemDescription>
+        <p className="text-xs text-muted-foreground">{updatedLabel(saved.updatedAt)}に更新</p>
       </ItemContent>
       <ItemActions className="relative z-10">
         <DropdownMenu>

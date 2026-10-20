@@ -51,6 +51,20 @@ export const SAMPLE: Resume = {
   resume: { motivation: "志望動機・自己PRをここに書く。\n改行はそのまま反映される。", request: "貴社規定に従います。" },
 };
 
+export const has = (s: string) => s.trim().length > 0;
+
+/** 各項目の主な欄が埋まっているか（目安。保存は止めない。入力画面と一覧で使う） */
+export function sectionStatus(r: Resume) {
+  const p = r.profile;
+  return {
+    basic: has(p.name) && has(p.kana) && has(p.birth),
+    address: has(p.postal) && has(p.address) && has(p.phone),
+    history: r.education.some((x) => has(x.text)),
+    licenses: r.licenses.some((x) => has(x.text)),
+    motivation: has(r.resume.motivation),
+  };
+}
+
 /** 読み込んだデータ（古い形式や欠けたものを含む）を、すべての項目がそろった Resume にする */
 export function toResume(data: unknown): Resume {
   const e = emptyResume();
