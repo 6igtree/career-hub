@@ -5,10 +5,10 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: SITE_TITLE, template: "%s｜career-hub" },
+  title: { default: SITE_TITLE, template: "%s｜ResumeDocs" },
   description: SITE_DESCRIPTION,
-  applicationName: "career-hub",
-  openGraph: { type: "website", locale: "ja_JP", siteName: "career-hub", url: "/", title: SITE_TITLE, description: SITE_DESCRIPTION },
+  applicationName: "ResumeDocs",
+  openGraph: { type: "website", locale: "ja_JP", siteName: "ResumeDocs", url: "/", title: SITE_TITLE, description: SITE_DESCRIPTION },
   twitter: { card: "summary_large_image", title: SITE_TITLE, description: SITE_DESCRIPTION },
 };
 

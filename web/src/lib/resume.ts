@@ -364,8 +364,8 @@ export async function makePdf(kind: "a4" | "a3", d: Resume, assets: Assets) {
   doc.setAuthor(d.profile.name || "");
   doc.setSubject("");
   doc.setKeywords([]);
-  doc.setCreator("career-hub");
-  doc.setProducer("career-hub");
+  doc.setCreator("ResumeDocs");
+  doc.setProducer("ResumeDocs");
   doc.setCreationDate(now);
   doc.setModificationDate(now);
   return doc.save();
