@@ -1,7 +1,7 @@
-// 本番の URL（正規 URL・OGP・サイトマップで使う）。Vercel では本番のドメインが渡るので、独自ドメインにしても追従する
+// 本番の URL（正規 URL・OGP・サイトマップで使う）。Vercel では本番のドメイン（resume-docs.com）が渡る。下は Vercel の外でビルドしたとき用
 export const SITE_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
   ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  : "https://career-hub-one-dusky.vercel.app";
+  : "https://resume-docs.com";
 
 export const SITE_TITLE = "厚生労働省様式の履歴書を無料で作成・PDF保存｜ResumeDocs";
 export const SITE_DESCRIPTION =
