@@ -36,7 +36,7 @@ const FEATURES = [
   { icon: FileCheckCorner, title: "公式の様式そのまま", text: "厚生労働省の PDF に書き込むので、様式とずれません。" },
   { icon: ShieldCheck, title: "入力内容は外に出ない", text: "保存先はこのブラウザの中だけ。サーバーには送りません。" },
   { icon: Smartphone, title: "スマホで最後まで", text: "PDF の保存も、LINE やメールでの送信もスマホでできます。" },
-  { icon: Files, title: "応募先ごとに保存", text: "いくつでも保存でき、複製して志望動機だけ書き換えられます。" },
+  { icon: Files, title: "応募先ごとに保存", text: "いくつでも保存でき、フォルダで分けられます。" },
 ];
 
 const STEPS = [

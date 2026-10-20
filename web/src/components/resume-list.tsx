@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Copy, FileText, FolderInput, FolderOpen, FolderPlus, MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { ChevronDown, Copy, FileText, FileUp, FolderInput, FolderOpen, FolderPlus, MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import {
@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/button-group";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -75,6 +76,31 @@ function updatedLabel(time: number) {
   if (d.toDateString() === now.toDateString()) return `今日 ${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
   const md = `${d.getMonth() + 1}月${d.getDate()}日`;
   return d.getFullYear() === now.getFullYear() ? md : `${d.getFullYear()}年${md}`;
+}
+
+// 「新しく作る」の ▾ に並べるもの
+const MENU = [
+  { icon: FileText, title: "履歴書", text: "空の状態から書く" },
+  { icon: Sparkles, title: "見本から", text: "見本の内容を入れて、書き換えて使う", sample: true },
+  { icon: FolderPlus, title: "フォルダ", text: "応募先の種類などで履歴書を分ける" },
+  { icon: FileUp, title: "ファイルから読み込む", text: "書き出したファイルで続きを書く" },
+];
+
+/** ▾ の中の1行。アイコン・名前・説明を並べる（shadcn の Item をメニューの中で使う形） */
+function CreateItem({ icon: Icon, title, text, onClick }: { icon: typeof FileText; title: string; text: string; onClick: () => void }) {
+  return (
+    <DropdownMenuItem onClick={onClick}>
+      <Item size="xs" className="w-full flex-nowrap">
+        <ItemMedia variant="icon" className="size-8 rounded-md bg-primary/10 text-primary">
+          <Icon className="size-4" />
+        </ItemMedia>
+        <ItemContent className="gap-0">
+          <ItemTitle>{title}</ItemTitle>
+          <ItemDescription className="line-clamp-none">{text}</ItemDescription>
+        </ItemContent>
+      </Item>
+    </DropdownMenuItem>
+  );
 }
 
 // 一覧に「あと何を書けばいいか」を出す項目（資格は無い人もいるので数えない）
@@ -229,17 +255,6 @@ export function ResumeList() {
       <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 w-full max-w-3xl items-center gap-3 px-4 sm:px-6">
           <Brand />
-          <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="ml-auto size-11 sm:size-8" aria-label="メニュー" />}>
-              <MoreHorizontal className="size-5 sm:size-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-60 sm:w-52">
-              <DropdownMenuItem onClick={() => importInput.current?.click()}>
-                <FolderOpen />
-                ファイルから読み込む
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </header>
 
@@ -247,13 +262,33 @@ export function ResumeList() {
         <div className="flex min-h-11 items-center justify-between gap-3 sm:min-h-9">
           <h1 className="text-lg font-semibold">保存した履歴書</h1>
           {loaded && list.length > 0 && (
-            <Button className="h-11 sm:h-9" onClick={() => create()}>
-              <Plus data-icon="inline-start" />
-              新しく作る
-            </Button>
+            <ButtonGroup>
+              <Button className="h-11 sm:h-9" onClick={() => create()}>
+                <Plus data-icon="inline-start" />
+                新しく作る
+              </Button>
+              <ButtonGroupSeparator />
+              <DropdownMenu>
+                <DropdownMenuTrigger render={<Button size="icon" className="size-11 sm:size-9" aria-label="作るものを選ぶ" />}>
+                  <ChevronDown />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-72 sm:w-64">
+                  <DropdownMenuGroup>
+                    {/* フォルダを開いているときは、どこに作られるかを示す */}
+                    {folder && <DropdownMenuLabel className="truncate">「{folder.name}」に作る</DropdownMenuLabel>}
+                    {MENU.slice(0, 2).map((m) => (
+                      <CreateItem key={m.title} {...m} onClick={() => (m.sample ? create(structuredClone(SAMPLE), "見本") : create())} />
+                    ))}
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+                  <CreateItem {...MENU[2]} onClick={() => setNaming({ kind: "new" })} />
+                  <CreateItem {...MENU[3]} onClick={() => importInput.current?.click()} />
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </ButtonGroup>
           )}
         </div>
-        {loaded && list.length > 0 && (
+        {loaded && folders.length > 0 && list.length > 0 && (
           <div className="flex items-center gap-2">
             {/* フォルダが増えたら横に流して見る。全部は右の ▾ から一覧で選べる（マウスでは横に流しにくいため） */}
             <div
@@ -261,74 +296,55 @@ export function ResumeList() {
               className={cn(
                 "flex min-w-0 flex-1 items-center gap-2 overflow-x-auto [scrollbar-width:none]",
                 // 流したときも画面の端に付かないよう、端の余白を残して止める
-                folders.length ? "-ml-4 scroll-pl-4 pl-4 sm:-ml-6 sm:scroll-pl-6 sm:pl-6" : "-mx-4 px-4 sm:-mx-6 sm:px-6",
+                "-ml-4 scroll-pl-4 pl-4 sm:-ml-6 sm:scroll-pl-6 sm:pl-6",
               )}
             >
-              {folders.length > 0 && (
-                <ToggleGroup variant="outline" value={[folder?.id ?? ALL]} onValueChange={(v) => v[0] && select(v[0])} aria-label="表示するフォルダ">
-                  {views.map((v) => (
-                    <ToggleGroupItem
-                      key={v.id}
-                      value={v.id}
-                      className="h-9 px-3 sm:h-8 aria-pressed:border-primary/40 aria-pressed:bg-primary/10 aria-pressed:text-primary"
-                    >
-                      {/* 長い名前は省略する（全部は ▾ の一覧で見られる） */}
-                      <span className="max-w-40 truncate">{v.name}</span>
-                      <span className="text-xs text-muted-foreground tabular-nums">{v.count}</span>
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
-              )}
-              {folders.length ? (
-                <Button variant="ghost" size="icon" className="size-9 shrink-0 text-muted-foreground sm:size-8" aria-label="フォルダを作る" onClick={() => setNaming({ kind: "new" })}>
-                  <FolderPlus />
-                </Button>
-              ) : (
-                <Button variant="ghost" className="h-9 shrink-0 px-2.5 text-muted-foreground sm:h-8" onClick={() => setNaming({ kind: "new" })}>
-                  <FolderPlus data-icon="inline-start" />
-                  フォルダを作る
-                </Button>
-              )}
+              <ToggleGroup variant="outline" value={[folder?.id ?? ALL]} onValueChange={(v) => v[0] && select(v[0])} aria-label="表示するフォルダ">
+                {views.map((v) => (
+                  <ToggleGroupItem
+                    key={v.id}
+                    value={v.id}
+                    className="h-9 px-3 sm:h-8 aria-pressed:border-primary/40 aria-pressed:bg-primary/10 aria-pressed:text-primary"
+                  >
+                    {/* 長い名前は省略する（全部は ▾ の一覧で見られる） */}
+                    <span className="max-w-40 truncate">{v.name}</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">{v.count}</span>
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
             </div>
-            {folders.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="size-9 shrink-0 sm:size-8" aria-label="フォルダの一覧" />}>
-                  <ChevronDown />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64 sm:w-56">
-                  <DropdownMenuRadioGroup value={folder?.id ?? ALL} onValueChange={select}>
-                    {views.map((v) => (
-                      <DropdownMenuRadioItem key={v.id} value={v.id} closeOnClick>
-                        <span className="min-w-0 flex-1 truncate">{v.name}</span>
-                        <span className="text-xs text-muted-foreground tabular-nums">{v.count}</span>
-                      </DropdownMenuRadioItem>
-                    ))}
-                  </DropdownMenuRadioGroup>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setNaming({ kind: "new" })}>
-                    <FolderPlus />
-                    フォルダを作る
-                  </DropdownMenuItem>
-                  {folder && (
-                    <>
-                      <DropdownMenuSeparator />
-                      {/* 下の2つは、開いているフォルダに対する操作 */}
-                      <DropdownMenuGroup>
-                        <DropdownMenuLabel className="truncate">「{folder.name}」</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => setNaming({ kind: "rename", folder })}>
-                          <Pencil />
-                          名前を変える
-                        </DropdownMenuItem>
-                        <DropdownMenuItem variant="destructive" onClick={() => setDeletingFolder(folder)}>
-                          <Trash2 />
-                          削除
-                        </DropdownMenuItem>
-                      </DropdownMenuGroup>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="size-9 shrink-0 sm:size-8" aria-label="フォルダの一覧" />}>
+                <ChevronDown />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 sm:w-56">
+                <DropdownMenuRadioGroup value={folder?.id ?? ALL} onValueChange={select}>
+                  {views.map((v) => (
+                    <DropdownMenuRadioItem key={v.id} value={v.id} closeOnClick>
+                      <span className="min-w-0 flex-1 truncate">{v.name}</span>
+                      <span className="text-xs text-muted-foreground tabular-nums">{v.count}</span>
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+                {folder && (
+                  <>
+                    <DropdownMenuSeparator />
+                    {/* 下の2つは、開いているフォルダに対する操作 */}
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel className="truncate">「{folder.name}」</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => setNaming({ kind: "rename", folder })}>
+                        <Pencil />
+                        名前を変える
+                      </DropdownMenuItem>
+                      <DropdownMenuItem variant="destructive" onClick={() => setDeletingFolder(folder)}>
+                        <Trash2 />
+                        削除
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
         {!loaded ? (
@@ -359,6 +375,10 @@ export function ResumeList() {
                 見本で試す
               </Button>
             </EmptyContent>
+            <Button variant="link" className="h-11 text-muted-foreground sm:h-9" onClick={() => importInput.current?.click()}>
+              <FileUp data-icon="inline-start" />
+              書き出したファイルを読み込む
+            </Button>
           </Empty>
         ) : shown.length === 0 ? (
           <Empty className="flex-none border bg-card">
@@ -388,7 +408,7 @@ export function ResumeList() {
               ))}
             </ItemGroup>
             <p className="text-xs text-muted-foreground">
-              この端末のブラウザに保存しています。別の端末で続けるときは、書き出したファイルを右上のメニューから読み込みます。
+              この端末のブラウザに保存しています。別の端末で続けるときは、書き出したファイルを「新しく作る」の ▾ から読み込みます。
             </p>
           </>
         )}
