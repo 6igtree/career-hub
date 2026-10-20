@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Copy, FileText, FolderOpen, MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Copy, FileText, FolderCog, FolderInput, FolderOpen, FolderPlus, MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "cn";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,18 +17,55 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RenameSheet } from "@/components/rename-sheet";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { NameSheet, RenameSheet } from "@/components/rename-sheet";
 import { Brand } from "@/components/site";
 import { SAMPLE, sectionStatus, toResume, type Resume } from "@/lib/resume";
-import { createResume, deleteResume, duplicateResume, editHref, getResume, useResumeList, type Saved } from "@/lib/store";
+import {
+  createFolder,
+  createResume,
+  deleteFolder,
+  deleteResume,
+  duplicateResume,
+  editHref,
+  getResume,
+  moveResume,
+  renameFolder,
+  useFolders,
+  useResumeList,
+  type Folder,
+  type Saved,
+} from "@/lib/store";
 
 // 保存内容はブラウザにしかないので、読み込むまで一覧を出さない（空の案内のちらつき防止）
 const noop = () => () => {};
 const useLoaded = () => useSyncExternalStore(noop, () => true, () => false);
+
+// 開いているフォルダ。編集から戻っても同じフォルダが開くよう、このタブの間だけ覚える
+const ALL = "all";
+const VIEW_KEY = "career-hub:view";
+function readView() {
+  try {
+    return sessionStorage.getItem(VIEW_KEY) ?? ALL;
+  } catch {
+    return ALL;
+  }
+}
 
 function updatedLabel(time: number) {
   const d = new Date(time);
@@ -45,11 +83,22 @@ const SECTIONS = [
   ["motivation", "志望動機"],
 ] as const;
 
-function ResumeCard({ saved, onRename, onDelete }: { saved: Saved; onRename: () => void; onDelete: () => void }) {
+function ResumeCard({ saved, folders, onRename, onDelete, onNewFolder }: {
+  saved: Saved;
+  folders: Folder[];
+  onRename: () => void;
+  onDelete: () => void;
+  onNewFolder: () => void;
+}) {
   const status = sectionStatus(getResume(saved.id));
   const missing = SECTIONS.filter(([key]) => !status[key]).map(([, label]) => label);
   // 直すところがあるときだけ出す（入力済みなら何も出さない）
   const todo = missing.length === SECTIONS.length ? "まだ入力していません" : missing.length ? `未入力：${missing.join("・")}` : null;
+  const move = (folder: string) => {
+    moveResume(saved.id, folder || undefined);
+    const name = folders.find((f) => f.id === folder)?.name;
+    toast(name ? `「${name}」に移しました` : "フォルダから出しました");
+  };
   return (
     <Item variant="outline" className="relative bg-card hover:bg-muted/60">
       <ItemMedia variant="icon" className="size-10 rounded-lg bg-primary/10 text-primary">
@@ -89,6 +138,30 @@ function ResumeCard({ saved, onRename, onDelete }: { saved: Saved; onRename: () 
               <Copy />
               複製する
             </DropdownMenuItem>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <FolderInput />
+                フォルダに移す
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="w-52 sm:w-44">
+                <DropdownMenuRadioGroup value={saved.folder ?? ""} onValueChange={move}>
+                  {/* 選んだらメニューを閉じる（選ぶ項目は、ふだんは開いたままになる） */}
+                  <DropdownMenuRadioItem value="" closeOnClick>
+                    入れない
+                  </DropdownMenuRadioItem>
+                  {folders.map((f) => (
+                    <DropdownMenuRadioItem key={f.id} value={f.id} closeOnClick>
+                      <span className="truncate">{f.name}</span>
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onNewFolder}>
+                  <FolderPlus />
+                  新しいフォルダ
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onClick={onDelete}>
               <Trash2 />
@@ -101,21 +174,45 @@ function ResumeCard({ saved, onRename, onDelete }: { saved: Saved; onRename: () 
   );
 }
 
+// フォルダの名前を入れる画面：新しく作る（move があればその履歴書を入れる）か、名前を変える
+type Naming = { kind: "new"; move?: Saved } | { kind: "rename"; folder: Folder };
+
 /** 保存した履歴書の一覧（/app/） */
 export function ResumeList() {
   const loaded = useLoaded();
   const list = useResumeList();
+  const folders = useFolders();
   const router = useRouter();
+  const [view, setView] = useState(readView);
   const [renaming, setRenaming] = useState<Saved | null>(null);
   const [deleting, setDeleting] = useState<Saved | null>(null);
+  const [naming, setNaming] = useState<Naming | null>(null);
+  const [deletingFolder, setDeletingFolder] = useState<Folder | null>(null);
   const importInput = useRef<HTMLInputElement>(null);
+  const folderBar = useRef<HTMLDivElement>(null);
+  // 消したフォルダが開いたままにならないよう、無ければ「すべて」
+  const folder = folders.find((f) => f.id === view);
+  // 選んだフォルダが端で切れていたら見えるところまで流す（フォルダのメニューが出て幅が縮んだあとに）
+  useEffect(() => {
+    folderBar.current?.querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [folder?.id]);
   const sorted = [...list].sort((a, b) => b.updatedAt - a.updatedAt);
-  const create = (data?: Resume, title?: string) => router.push(editHref(createResume(data, title)));
+  const shown = folder ? sorted.filter((s) => s.folder === folder.id) : sorted;
+  // 開いているフォルダで作ったものは、そのフォルダに入れる
+  const create = (data?: Resume, title?: string) => router.push(editHref(createResume(data, title, folder?.id)));
+  const select = (id: string) => {
+    setView(id);
+    try {
+      sessionStorage.setItem(VIEW_KEY, id);
+    } catch {
+      // 覚えられなくても切り替えはできる
+    }
+  };
 
   async function importFile(file: File | undefined) {
     if (!file) return;
     try {
-      createResume(toResume(JSON.parse(await file.text())), file.name.replace(/\.json$/i, "") || undefined);
+      createResume(toResume(JSON.parse(await file.text())), file.name.replace(/\.json$/i, "") || undefined, folder?.id);
       toast.success("読み込みました");
     } catch {
       toast.error("このファイルは読み込めませんでした", { description: "書き出した JSON ファイルを選んでください" });
@@ -151,6 +248,55 @@ export function ResumeList() {
             </Button>
           )}
         </div>
+        {loaded && list.length > 0 && (
+          <div className="flex items-center gap-2">
+            {/* フォルダが増えたら横に流して見る。右にフォルダのメニューがあるときは、その下にもぐらせない */}
+            <div
+              ref={folderBar}
+              className={cn(
+                "flex min-w-0 flex-1 items-center gap-2 overflow-x-auto [scrollbar-width:none]",
+                folder ? "-ml-4 pl-4 sm:-ml-6 sm:pl-6" : "-mx-4 px-4 sm:-mx-6 sm:px-6",
+              )}
+            >
+              {folders.length > 0 && (
+                <ToggleGroup variant="outline" value={[folder?.id ?? ALL]} onValueChange={(v) => v[0] && select(v[0])} aria-label="表示するフォルダ">
+                  {[{ id: ALL, name: "すべて", count: list.length }, ...folders.map((f) => ({ ...f, count: list.filter((s) => s.folder === f.id).length }))].map((f) => (
+                    <ToggleGroupItem
+                      key={f.id}
+                      value={f.id}
+                      className="h-9 px-3 sm:h-8 aria-pressed:border-primary/40 aria-pressed:bg-primary/10 aria-pressed:text-primary"
+                    >
+                      {f.name}
+                      <span className="text-xs text-muted-foreground tabular-nums">{f.count}</span>
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
+              )}
+              <Button variant="ghost" className="h-9 shrink-0 px-2.5 text-muted-foreground sm:h-8" onClick={() => setNaming({ kind: "new" })}>
+                <FolderPlus data-icon="inline-start" />
+                フォルダを作る
+              </Button>
+            </div>
+            {folder && (
+              <DropdownMenu>
+                <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="size-9 shrink-0 sm:size-8" aria-label={`フォルダ「${folder.name}」のメニュー`} />}>
+                  <FolderCog />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-60 sm:w-52">
+                  <DropdownMenuItem onClick={() => setNaming({ kind: "rename", folder })}>
+                    <Pencil />
+                    フォルダの名前を変える
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem variant="destructive" onClick={() => setDeletingFolder(folder)}>
+                    <Trash2 />
+                    フォルダを削除
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        )}
         {!loaded ? (
           <div className="flex flex-col gap-3">
             <Skeleton className="h-20 w-full" />
@@ -180,11 +326,31 @@ export function ResumeList() {
               </Button>
             </EmptyContent>
           </Empty>
+        ) : shown.length === 0 ? (
+          <Empty className="flex-none border bg-card">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <FolderOpen />
+              </EmptyMedia>
+              <EmptyTitle>このフォルダは空です</EmptyTitle>
+              <EmptyDescription>
+                <span className="inline-block">「新しく作る」で作るか、</span>
+                <span className="inline-block">「すべて」から移してください。</span>
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         ) : (
           <>
             <ItemGroup className="gap-3">
-              {sorted.map((s) => (
-                <ResumeCard key={s.id} saved={s} onRename={() => setRenaming(s)} onDelete={() => setDeleting(s)} />
+              {shown.map((s) => (
+                <ResumeCard
+                  key={s.id}
+                  saved={s}
+                  folders={folders}
+                  onRename={() => setRenaming(s)}
+                  onDelete={() => setDeleting(s)}
+                  onNewFolder={() => setNaming({ kind: "new", move: s })}
+                />
               ))}
             </ItemGroup>
             <p className="text-xs text-muted-foreground">
@@ -194,8 +360,25 @@ export function ResumeList() {
         )}
       </main>
 
-
       {renaming && <RenameSheet id={renaming.id} title={renaming.title} onClose={() => setRenaming(null)} />}
+
+      {naming && (
+        <NameSheet
+          title={naming.kind === "new" ? "フォルダを作る" : "フォルダの名前を変える"}
+          label="フォルダの名前"
+          value={naming.kind === "rename" ? naming.folder.name : ""}
+          description="例：IT企業、事務職"
+          onSave={(name) => {
+            if (!name) return;
+            if (naming.kind === "rename") return renameFolder(naming.folder.id, name);
+            const id = createFolder(name);
+            if (!naming.move) return select(id);
+            moveResume(naming.move.id, id);
+            toast(`「${name}」に移しました`);
+          }}
+          onClose={() => setNaming(null)}
+        />
+      )}
 
       <AlertDialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}>
         <AlertDialogContent>
@@ -212,6 +395,30 @@ export function ResumeList() {
                 if (deleting) deleteResume(deleting.id);
                 setDeleting(null);
                 toast("削除しました");
+              }}
+            >
+              削除する
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!deletingFolder} onOpenChange={(open) => !open && setDeletingFolder(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>フォルダ「{deletingFolder?.name}」を削除しますか？</AlertDialogTitle>
+            <AlertDialogDescription>中の履歴書は消えず、「すべて」に残ります。</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="h-11 sm:h-9">やめる</AlertDialogCancel>
+            <AlertDialogAction
+              className="h-11 sm:h-9"
+              variant="destructive"
+              onClick={() => {
+                if (deletingFolder) deleteFolder(deletingFolder.id);
+                setDeletingFolder(null);
+                select(ALL);
+                toast("フォルダを削除しました");
               }}
             >
               削除する
