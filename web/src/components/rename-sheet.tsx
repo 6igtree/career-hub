@@ -7,12 +7,19 @@ import { Input } from "@/components/ui/input";
 import { EditSheet } from "@/components/edit-sheet";
 import { renameResume } from "@/lib/store";
 
-/** 履歴書の名前を変える（閉じるときは呼び出し側で外す） */
-export function RenameSheet({ id, title: current, onClose }: { id: string; title: string; onClose: () => void }) {
+/** 名前を1つ入力する画面（履歴書とフォルダで共通）。onSave には前後の空白を除いた名前が渡る。閉じるときは呼び出し側で外す */
+export function NameSheet({ title, label, value, description, onSave, onClose }: {
+  title: string;
+  label: string;
+  value: string;
+  description?: string;
+  onSave: (name: string) => void;
+  onClose: () => void;
+}) {
   const inputId = useId();
-  const [title, setTitle] = useState(current);
+  const [name, setName] = useState(value);
   const save = () => {
-    renameResume(id, title.trim() || current);
+    onSave(name.trim());
     onClose();
   };
 
@@ -20,7 +27,7 @@ export function RenameSheet({ id, title: current, onClose }: { id: string; title
     <EditSheet
       open
       onOpenChange={(open) => !open && onClose()}
-      title="名前を変える"
+      title={title}
       footer={
         <>
           <Button variant="ghost" className="h-11 sm:h-9" onClick={onClose}>
@@ -40,12 +47,26 @@ export function RenameSheet({ id, title: current, onClose }: { id: string; title
       >
         <Field>
           <FieldLabel htmlFor={inputId} className="text-[15px] sm:text-sm">
-            名前
+            {label}
           </FieldLabel>
-          <Input id={inputId} value={title} onChange={(e) => setTitle(e.target.value)} autoFocus />
-          <FieldDescription>例：○○社用（PDF には出ません）</FieldDescription>
+          <Input id={inputId} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+          {description && <FieldDescription>{description}</FieldDescription>}
         </Field>
       </form>
     </EditSheet>
+  );
+}
+
+/** 履歴書の名前を変える。空なら元の名前のまま */
+export function RenameSheet({ id, title, onClose }: { id: string; title: string; onClose: () => void }) {
+  return (
+    <NameSheet
+      title="名前を変える"
+      label="名前"
+      value={title}
+      description="例：○○社用（PDF には出ません）"
+      onSave={(name) => renameResume(id, name || title)}
+      onClose={onClose}
+    />
   );
 }

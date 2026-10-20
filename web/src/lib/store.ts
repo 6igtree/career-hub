@@ -3,18 +3,23 @@ import { useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { emptyResume, toResume, type Resume } from "./resume";
 
-export type Saved = { id: string; title: string; updatedAt: number };
+// folder：入っているフォルダの id。入っていなければ無し
+export type Saved = { id: string; title: string; updatedAt: number; folder?: string };
+export type Folder = { id: string; name: string };
 
 export const editHref = (id: string) => `/edit/?id=${id}`;
 
 const LIST_KEY = "career-hub:list";
+const FOLDERS_KEY = "career-hub:folders";
 const OLD_KEY = "career-hub"; // 1つだけ保存していたころのキー
 const resumeKey = (id: string) => `career-hub:resume:${id}`;
 const SERVER_RESUME = emptyResume(); // 書き出し時（サーバー側）の描画で使う空のデータ
 const SERVER_LIST: Saved[] = [];
+const SERVER_FOLDERS: Folder[] = [];
 const listeners = new Set<() => void>();
 const cache = new Map<string, Resume>();
 let list: Saved[] | null = null;
+let folders: Folder[] | null = null;
 let currentId: string | null = null;
 let warned = false;
 
@@ -109,18 +114,59 @@ export function updateResume(fn: (draft: Resume) => void) {
   setResume(draft);
 }
 
-/** 新しく作って id を返す */
-export function createResume(data: Resume = emptyResume(), title = nextTitle()) {
+/** 新しく作って id を返す。folder を渡すとそのフォルダに入れる */
+export function createResume(data: Resume = emptyResume(), title = nextTitle(), folder?: string) {
   const id = newId();
   cache.set(id, data);
   write(resumeKey(id), data);
-  setList([...getList(), { id, title, updatedAt: Date.now() }]);
+  setList([...getList(), { id, title, updatedAt: Date.now(), folder }]);
   return id;
 }
 
+/** 複製は元と同じフォルダに入れる */
 export function duplicateResume(id: string) {
-  const title = getList().find((s) => s.id === id)?.title ?? "履歴書";
-  return createResume(structuredClone(getResume(id)), `${title} のコピー`);
+  const src = getList().find((s) => s.id === id);
+  return createResume(structuredClone(getResume(id)), `${src?.title ?? "履歴書"} のコピー`, src?.folder);
+}
+
+/** 履歴書をフォルダに移す。folder を省くとフォルダから出す（更新日時は変えない） */
+export function moveResume(id: string, folder?: string) {
+  setList(getList().map((s) => (s.id === id ? { ...s, folder } : s)));
+}
+
+function getFolders(): Folder[] {
+  if (!folders) {
+    folders = [];
+    try {
+      const saved = localStorage.getItem(FOLDERS_KEY);
+      if (saved) folders = JSON.parse(saved);
+    } catch {
+      // 読めないときはフォルダなしで始める
+    }
+  }
+  return folders!;
+}
+
+function setFolders(next: Folder[]) {
+  folders = next;
+  write(FOLDERS_KEY, next);
+  notify();
+}
+
+export function createFolder(name: string) {
+  const id = newId();
+  setFolders([...getFolders(), { id, name }]);
+  return id;
+}
+
+export function renameFolder(id: string, name: string) {
+  setFolders(getFolders().map((f) => (f.id === id ? { ...f, name } : f)));
+}
+
+/** フォルダを消す。中の履歴書は消さず、どのフォルダにも入っていない状態に戻す */
+export function deleteFolder(id: string) {
+  setList(getList().map((s) => (s.folder === id ? { ...s, folder: undefined } : s)));
+  setFolders(getFolders().filter((f) => f.id !== id));
 }
 
 export function renameResume(id: string, title: string) {
@@ -149,4 +195,8 @@ export function useResume() {
 
 export function useResumeList() {
   return useSyncExternalStore(subscribe, getList, () => SERVER_LIST);
+}
+
+export function useFolders() {
+  return useSyncExternalStore(subscribe, getFolders, () => SERVER_FOLDERS);
 }
