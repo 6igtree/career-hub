@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Copy, FileText, FolderCog, FolderInput, FolderOpen, FolderPlus, MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { ChevronDown, Copy, FileText, FolderInput, FolderOpen, FolderPlus, MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import {
@@ -20,7 +20,9 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
@@ -151,7 +153,7 @@ function ResumeCard({ saved, folders, onRename, onDelete, onNewFolder }: {
                   </DropdownMenuRadioItem>
                   {folders.map((f) => (
                     <DropdownMenuRadioItem key={f.id} value={f.id} closeOnClick>
-                      <span className="truncate">{f.name}</span>
+                      <span className="min-w-0 truncate">{f.name}</span>
                     </DropdownMenuRadioItem>
                   ))}
                 </DropdownMenuRadioGroup>
@@ -198,6 +200,9 @@ export function ResumeList() {
   }, [folder?.id]);
   const sorted = [...list].sort((a, b) => b.updatedAt - a.updatedAt);
   const shown = folder ? sorted.filter((s) => s.folder === folder.id) : sorted;
+  const counts = new Map<string, number>();
+  for (const s of list) if (s.folder) counts.set(s.folder, (counts.get(s.folder) ?? 0) + 1);
+  const views = [{ id: ALL, name: "すべて", count: list.length }, ...folders.map((f) => ({ ...f, count: counts.get(f.id) ?? 0 }))];
   // 開いているフォルダで作ったものは、そのフォルダに入れる
   const create = (data?: Resume, title?: string) => router.push(editHref(createResume(data, title, folder?.id)));
   const select = (id: string) => {
@@ -250,48 +255,77 @@ export function ResumeList() {
         </div>
         {loaded && list.length > 0 && (
           <div className="flex items-center gap-2">
-            {/* フォルダが増えたら横に流して見る。右にフォルダのメニューがあるときは、その下にもぐらせない */}
+            {/* フォルダが増えたら横に流して見る。全部は右の ▾ から一覧で選べる（マウスでは横に流しにくいため） */}
             <div
               ref={folderBar}
               className={cn(
                 "flex min-w-0 flex-1 items-center gap-2 overflow-x-auto [scrollbar-width:none]",
-                folder ? "-ml-4 pl-4 sm:-ml-6 sm:pl-6" : "-mx-4 px-4 sm:-mx-6 sm:px-6",
+                // 流したときも画面の端に付かないよう、端の余白を残して止める
+                folders.length ? "-ml-4 scroll-pl-4 pl-4 sm:-ml-6 sm:scroll-pl-6 sm:pl-6" : "-mx-4 px-4 sm:-mx-6 sm:px-6",
               )}
             >
               {folders.length > 0 && (
                 <ToggleGroup variant="outline" value={[folder?.id ?? ALL]} onValueChange={(v) => v[0] && select(v[0])} aria-label="表示するフォルダ">
-                  {[{ id: ALL, name: "すべて", count: list.length }, ...folders.map((f) => ({ ...f, count: list.filter((s) => s.folder === f.id).length }))].map((f) => (
+                  {views.map((v) => (
                     <ToggleGroupItem
-                      key={f.id}
-                      value={f.id}
+                      key={v.id}
+                      value={v.id}
                       className="h-9 px-3 sm:h-8 aria-pressed:border-primary/40 aria-pressed:bg-primary/10 aria-pressed:text-primary"
                     >
-                      {f.name}
-                      <span className="text-xs text-muted-foreground tabular-nums">{f.count}</span>
+                      {/* 長い名前は省略する（全部は ▾ の一覧で見られる） */}
+                      <span className="max-w-40 truncate">{v.name}</span>
+                      <span className="text-xs text-muted-foreground tabular-nums">{v.count}</span>
                     </ToggleGroupItem>
                   ))}
                 </ToggleGroup>
               )}
-              <Button variant="ghost" className="h-9 shrink-0 px-2.5 text-muted-foreground sm:h-8" onClick={() => setNaming({ kind: "new" })}>
-                <FolderPlus data-icon="inline-start" />
-                フォルダを作る
-              </Button>
+              {folders.length ? (
+                <Button variant="ghost" size="icon" className="size-9 shrink-0 text-muted-foreground sm:size-8" aria-label="フォルダを作る" onClick={() => setNaming({ kind: "new" })}>
+                  <FolderPlus />
+                </Button>
+              ) : (
+                <Button variant="ghost" className="h-9 shrink-0 px-2.5 text-muted-foreground sm:h-8" onClick={() => setNaming({ kind: "new" })}>
+                  <FolderPlus data-icon="inline-start" />
+                  フォルダを作る
+                </Button>
+              )}
             </div>
-            {folder && (
+            {folders.length > 0 && (
               <DropdownMenu>
-                <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="size-9 shrink-0 sm:size-8" aria-label={`フォルダ「${folder.name}」のメニュー`} />}>
-                  <FolderCog />
+                <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="size-9 shrink-0 sm:size-8" aria-label="フォルダの一覧" />}>
+                  <ChevronDown />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-60 sm:w-52">
-                  <DropdownMenuItem onClick={() => setNaming({ kind: "rename", folder })}>
-                    <Pencil />
-                    フォルダの名前を変える
-                  </DropdownMenuItem>
+                <DropdownMenuContent align="end" className="w-64 sm:w-56">
+                  <DropdownMenuRadioGroup value={folder?.id ?? ALL} onValueChange={select}>
+                    {views.map((v) => (
+                      <DropdownMenuRadioItem key={v.id} value={v.id} closeOnClick>
+                        <span className="min-w-0 flex-1 truncate">{v.name}</span>
+                        <span className="text-xs text-muted-foreground tabular-nums">{v.count}</span>
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem variant="destructive" onClick={() => setDeletingFolder(folder)}>
-                    <Trash2 />
-                    フォルダを削除
+                  <DropdownMenuItem onClick={() => setNaming({ kind: "new" })}>
+                    <FolderPlus />
+                    フォルダを作る
                   </DropdownMenuItem>
+                  {folder && (
+                    <>
+                      <DropdownMenuSeparator />
+                      {/* 下の2つは、開いているフォルダに対する操作 */}
+                      <DropdownMenuGroup>
+                        <DropdownMenuLabel className="truncate">「{folder.name}」</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => setNaming({ kind: "rename", folder })}>
+                          <Pencil />
+                          名前を変える
+                        </DropdownMenuItem>
+                        <DropdownMenuItem variant="destructive" onClick={() => setDeletingFolder(folder)}>
+                          <Trash2 />
+                          削除
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
