@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   viewportFit: "cover", // iPhone のホームバーを避けて操作バーを置く
-  themeColor: "#f8f4ec", // 背景の生成りと同じ色
+  themeColor: "#f6f7f9", // 背景と同じ色
   colorScheme: "light", // ダークモードは使わない（端末がダークでも明るく出す）
 };
 
