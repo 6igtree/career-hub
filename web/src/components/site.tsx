@@ -17,7 +17,7 @@ export function Brand() {
   );
 }
 
-const FORM_URL = "https://www.hellowork.mhlw.go.jp/member/career_doc01.html";
+export const FORM_URL ="https://www.hellowork.mhlw.go.jp/member/career_doc01.html";
 const PDL_URL = "https://www.digital.go.jp/resources/open_data/public_data_license_v1.0";
 
 /** 様式の出典。公共データ利用規約では、加工したら出典に加えて「加工したこと」と「加工した者」も書く */

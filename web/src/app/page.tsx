@@ -10,7 +10,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Item, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item";
 import { Separator } from "@/components/ui/separator";
-import { Brand, SiteFooter } from "@/components/site";
+import { Brand, FORM_URL, SiteFooter } from "@/components/site";
 import { StartButtons } from "@/components/start-buttons";
 import { SITE_DESCRIPTION, SITE_URL } from "@/lib/site";
 
@@ -45,11 +45,16 @@ const STEPS = [
   { title: "PDF で保存する", text: "A4（2枚）か A3（見開き1枚）を選んで保存します。" },
 ];
 
-const FAQ = [
+// JIS の様式例からの変更点（厚生労働省「新たな履歴書の様式例の作成について」2021年4月16日）
+const CHANGES = [
+  { title: "性別は任意記入", text: "「男・女」を選ぶ形ではなく、自由に書く欄になりました。書かなくても構いません。" },
   {
-    q: "厚生労働省の履歴書様式例とは？",
-    a: "2021年に厚生労働省が公表した履歴書の様式例です。性別欄は任意記入で、通勤時間や扶養家族の欄はありません。",
+    title: "4つの欄がなくなった",
+    text: "「通勤時間」「扶養家族数（配偶者を除く）」「配偶者」「配偶者の扶養義務」の欄はありません。",
   },
+];
+
+const FAQ = [
   { q: "無料で使えますか？登録は必要ですか？", a: "無料で、登録も不要です。" },
   {
     q: "入力した内容はどこに保存されますか？",
@@ -187,7 +192,36 @@ export default function Page() {
           <Separator />
         </section>
 
-        <section aria-labelledby="faq" className="mx-auto w-full max-w-5xl px-4 py-16 sm:px-6 md:py-20">
+        <section aria-labelledby="about-form" className="mx-auto w-full max-w-5xl px-4 pt-16 sm:px-6 md:pt-20">
+          <h2 id="about-form" className={h2}>
+            厚生労働省履歴書様式例とは
+          </h2>
+          <div className="mt-6 max-w-3xl space-y-4 leading-relaxed text-muted-foreground">
+            <p>
+              厚生労働省が2021年4月に公表した履歴書の様式例です。それまで推奨されていた JIS の様式例が2020年7月に削除されたため、公正な採用選考のために新しく作られました。
+            </p>
+            <p>JIS の様式例からは、主に次の点が変わりました。</p>
+          </div>
+          <ItemGroup className="mt-6 max-w-3xl gap-0 border-t-2 border-foreground">
+            {CHANGES.map(({ title, text }) => (
+              <Item key={title} role="listitem" className="items-start rounded-none border-0 border-b border-foreground/15 px-0 py-4">
+                <ItemContent>
+                  <ItemTitle className="text-base font-semibold">{title}</ItemTitle>
+                  <ItemDescription className="line-clamp-none leading-relaxed">{text}</ItemDescription>
+                </ItemContent>
+              </Item>
+            ))}
+          </ItemGroup>
+          <p className="mt-6 max-w-3xl leading-relaxed text-muted-foreground">
+            様式そのもの（PDF・Excel、A4・A3）は
+            <a className="underline underline-offset-2" href={FORM_URL}>
+              ハローワークインターネットサービス
+            </a>
+            で配布されています。ResumeDocs は、この PDF に入力内容を書き込んで作ります。
+          </p>
+        </section>
+
+        <section aria-labelledby="faq"className="mx-auto w-full max-w-5xl px-4 py-16 sm:px-6 md:py-20">
           <h2 id="faq" className={h2}>
             よくある質問
           </h2>
