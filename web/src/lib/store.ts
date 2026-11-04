@@ -7,7 +7,8 @@ import { emptyResume, toResume, type Resume } from "./resume";
 export type Saved = { id: string; title: string; updatedAt: number; folder?: string };
 export type Folder = { id: string; name: string };
 
-export const editHref = (id: string) => `/edit/?id=${id}`;
+// from：開いた応募先の id。編集画面の「戻る」でその応募先へ戻る
+export const editHref = (id: string, from?: string) => `/edit/?id=${id}${from ? `&from=${from}` : ""}`;
 
 const LIST_KEY = "career-hub:list";
 const FOLDERS_KEY = "career-hub:folders";
@@ -114,9 +115,10 @@ export function updateResume(fn: (draft: Resume) => void) {
   setResume(draft);
 }
 
-/** 新しく作って id を返す。folder を渡すとそのフォルダに入れる */
-export function createResume(data: Resume = emptyResume(), title = nextTitle(), folder?: string) {
-  const id = newId();
+/** 新しく作って id を返す。folder を渡すとそのフォルダに入れる。
+ *  keepId：読み込んだファイルにあった id。空いていれば使う（選考管理の「使った履歴書」のつながりを保つため） */
+export function createResume(data: Resume = emptyResume(), title = nextTitle(), folder?: string, keepId?: string) {
+  const id = keepId && !getList().some((s) => s.id === keepId) ? keepId : newId();
   cache.set(id, data);
   write(resumeKey(id), data);
   setList([...getList(), { id, title, updatedAt: Date.now(), folder }]);
@@ -199,4 +201,113 @@ export function useResumeList() {
 
 export function useFolders() {
   return useSyncExternalStore(subscribe, getFolders, () => SERVER_FOLDERS);
+}
+
+// 保存内容はブラウザにしかないので、読み込むまで一覧を出さない（空の案内のちらつき防止）
+const noop = () => () => {};
+export const useLoaded = () => useSyncExternalStore(noop, () => true, () => false);
+
+// 選考管理。応募先ごとに1件。履歴書とは別のキーに持ち、使った履歴書は id でつなぐ
+export const STATUSES = ["応募前", "書類選考", "面接", "内定", "終了"] as const;
+export type Status = (typeof STATUSES)[number];
+// 選考の記録（面接・面談ごとに1件）。name：種類が「その他」のときの名前
+export const STEP_KINDS = ["カジュアル面談", "一次面接", "二次面接", "最終面接", "その他"] as const;
+export type StepKind = (typeof STEP_KINDS)[number];
+export type Step = { id: string; kind: StepKind; name?: string; date?: string; memo: string };
+// resume：使った履歴書の id。memo：会社についてのメモ。次の予定は、記録の日付から出す
+export type Application = {
+  id: string;
+  company: string;
+  status: Status;
+  resume?: string;
+  memo?: string;
+  steps?: Step[];
+  updatedAt: number;
+};
+export type ApplicationInput = Omit<Application, "id" | "updatedAt">;
+
+export const applicationHref = (id: string) => `/app/applications/detail/?id=${id}`;
+export const newStepId = newId;
+
+/** 今日の日付（"2026-11-04"。記録の日付と同じ形） */
+export const today = () => new Date().toLocaleDateString("sv-SE");
+
+export const stepLabel = (s: Step) => (s.kind === "その他" ? s.name?.trim() || "その他" : s.kind);
+
+// 選考の記録は日付の順。日付の無いものは後ろに、足した順で並ぶ（sort は並びを崩さない）
+export const sortSteps = (steps: Step[] = []) => [...steps].sort((a, b) => (a.date || "9").localeCompare(b.date || "9"));
+
+/** 次の予定：明日以降で一番近い記録。今日の記録は、メモがまだ空なら（これから受ける面接として）含める */
+export const upcoming = (steps?: Step[]) => {
+  const t = today();
+  return sortSteps(steps).find((s) => s.date && (s.date > t || (s.date === t && !s.memo.trim())));
+};
+
+/** "2026-11-10" → 「11月10日（火）」（今年でなければ年も付ける） */
+export function dateLabel(date: string) {
+  const [y, m, d] = date.split("-").map(Number);
+  const day = new Date(y, m - 1, d);
+  const md = `${m}月${d}日（${"日月火水木金土"[day.getDay()]}）`;
+  return y === new Date().getFullYear() ? md : `${y}年${md}`;
+}
+
+const APPS_KEY = "career-hub:applications";
+const SERVER_APPS: Application[] = [];
+let apps: Application[] | null = null;
+
+function getApps(): Application[] {
+  if (!apps) {
+    apps = [];
+    try {
+      const saved = localStorage.getItem(APPS_KEY);
+      if (saved) apps = JSON.parse(saved);
+    } catch {
+      // 読めないときは空から始める
+    }
+  }
+  return apps!;
+}
+
+function setApps(next: Application[]) {
+  apps = next;
+  write(APPS_KEY, next);
+  notify();
+}
+
+/** 応募先を保存して id を返す。id があれば書き換え、無ければ追加する */
+export function saveApplication(data: ApplicationInput, id = newId()) {
+  const app = { ...data, id, updatedAt: Date.now() };
+  const list = getApps();
+  setApps(list.some((a) => a.id === id) ? list.map((a) => (a.id === id ? app : a)) : [...list, app]);
+  return id;
+}
+
+/** 一部だけ書き換える（選考の記録の入力ごとに呼ぶ）。fn には複製が渡るので、そのまま書き換えてよい */
+export function updateApplication(id: string, fn: (draft: Application) => void) {
+  setApps(
+    getApps().map((a) => {
+      if (a.id !== id) return a;
+      const draft = structuredClone(a);
+      fn(draft);
+      return { ...draft, updatedAt: Date.now() };
+    }),
+  );
+}
+
+/** 書き出したファイルを読み込む。同じ id は読み込んだ内容で置き換え、ほかは足す。読み込んだ件数を返す */
+export function importApplications(data: unknown) {
+  if (!Array.isArray(data) || !data.every((a) => typeof a?.id === "string" && typeof a.company === "string" && STATUSES.includes(a.status)))
+    throw new Error("選考管理のファイルではありません");
+  const incoming = data as Application[];
+  const ids = new Set(incoming.map((a) => a.id));
+  setApps([...getApps().filter((a) => !ids.has(a.id)), ...incoming]);
+  return incoming.length;
+}
+
+export function deleteApplication(id: string) {
+  setApps(getApps().filter((a) => a.id !== id));
+}
+
+export function useApplications() {
+  return useSyncExternalStore(subscribe, getApps, () => SERVER_APPS);
 }

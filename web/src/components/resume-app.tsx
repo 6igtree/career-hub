@@ -44,13 +44,8 @@ import { RenameSheet } from "@/components/rename-sheet";
 import { ResumeForm } from "@/components/resume-form";
 import { FormCredit } from "@/components/site";
 import { documentDate, emptyResume, layoutResume, loadAssets, makePdf, missingChars, SAMPLE, type Assets, type Resume } from "@/lib/resume";
-import { openResume, setResume, useResume, useResumeList } from "@/lib/store";
-
-function download(blob: Blob, name: string) {
-  const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: name });
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-}
+import { applicationHref, openResume, setResume, useResume, useResumeList } from "@/lib/store";
+import { download } from "@/lib/utils";
 
 /** スマホでは共有メニューを出し、使えなければダウンロードする */
 async function deliver(pdf: Uint8Array, name: string) {
@@ -83,22 +78,24 @@ function PreviewLoading({ progress }: { progress: number }) {
   );
 }
 
-/** 編集画面。開く履歴書は ?id= で受け取る */
+/** 編集画面。開く履歴書は ?id= で受け取る。?from= があれば（選考管理から開いた）「戻る」でその応募先へ */
 export function ResumeApp() {
-  const id = useSearchParams().get("id") ?? "";
-  return <OpenResume key={id} id={id} />;
+  const params = useSearchParams();
+  const id = params.get("id") ?? "";
+  const from = params.get("from");
+  return <OpenResume key={id} id={id} back={from ? applicationHref(from) : "/app/"} />;
 }
 
-function OpenResume({ id }: { id: string }) {
+function OpenResume({ id, back }: { id: string; back: string }) {
   const router = useRouter();
   const [found] = useState(() => openResume(id));
   useEffect(() => {
     if (!found) router.replace("/app/"); // 見つからなければ一覧へ
   }, [found, router]);
-  return found ? <Editor id={id} /> : null;
+  return found ? <Editor id={id} back={back} /> : null;
 }
 
-function Editor({ id }: { id: string }) {
+function Editor({ id, back }: { id: string; back: string }) {
   const resume = useResume();
   const title = useResumeList().find((s) => s.id === id)?.title ?? "履歴書";
   const isDesktop = useIsDesktop();
@@ -156,7 +153,8 @@ function Editor({ id }: { id: string }) {
   }
 
   function exportData() {
-    download(new Blob([JSON.stringify(resume, null, 2)], { type: "application/json" }), `${title}.json`);
+    // id も入れておく（読み込んだ先でも、選考管理の「使った履歴書」とつながるように）
+    download(new Blob([JSON.stringify({ id, ...resume }, null, 2)], { type: "application/json" }), `${title}.json`);
     toast.success("データを書き出しました", { description: "別の端末では、一覧の「ファイルから読み込む」で続きを書けます" });
   }
 
@@ -166,7 +164,7 @@ function Editor({ id }: { id: string }) {
     <>
       <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-1.5 px-2 sm:gap-3 sm:px-6">
-          <Link href="/app/" aria-label="一覧へ戻る" className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "size-11 shrink-0 sm:size-8")}>
+          <Link href={back} aria-label="戻る" className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "size-11 shrink-0 sm:size-8")}>
             <ChevronLeft className="size-5 sm:size-4" />
           </Link>
           <div className="min-w-0 leading-tight">
