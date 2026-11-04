@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { ClipboardList, FileText } from "lucide-react";
 import { cn } from "cn";
 import { buttonVariants } from "@/components/ui/button";
+import { Brand } from "@/components/site";
 
 const TABS = [
   { href: "/app/", label: "履歴書", icon: FileText },
@@ -18,8 +19,20 @@ function useCurrent() {
   return (href: string) => (href === "/app/" ? current === href : current.startsWith(href));
 }
 
+/** 履歴書の一覧・選考管理で共通のヘッダー（ロゴと、パソコンでは切り替えのタブ） */
+export function AppHeader() {
+  return (
+    <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
+      <div className="mx-auto flex h-14 w-full max-w-3xl items-center gap-3 px-4 sm:px-6">
+        <Brand />
+        <HeaderTabs />
+      </div>
+    </header>
+  );
+}
+
 /** パソコン：ヘッダーの右で切り替える */
-export function HeaderTabs() {
+function HeaderTabs() {
   const current = useCurrent();
   return (
     <nav aria-label="画面の切り替え" className="ml-auto hidden gap-1 lg:flex">

@@ -1,170 +1,38 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarDays, ClipboardList, Download, FileText, ListChecks, MoreHorizontal, Plus, Trash2, Upload } from "lucide-react";
+import { CalendarDays, ClipboardList, Download, FileText, ListChecks, MoreHorizontal, Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { Field, FieldDescription, FieldGroup, FieldLabel, FieldTitle } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { Item, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/components/ui/item";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { BottomTabs, HeaderTabs } from "@/components/app-tabs";
-import { EditSheet } from "@/components/edit-sheet";
-import { Brand } from "@/components/site";
+import { AppHeader, BottomTabs } from "@/components/app-tabs";
+import { ApplicationSheet } from "@/components/application-sheet";
 import {
   applicationHref,
-  editHref,
+  dateLabel,
   importApplications,
-  saveApplication,
-  STATUSES,
+  sortSteps,
+  stepLabel,
+  upcoming,
   useApplications,
   useLoaded,
   useResumeList,
   type Application,
-  type ApplicationInput,
-  type Status,
-  type Step,
 } from "@/lib/store";
 import { download } from "@/lib/utils";
-
-const LABEL = "text-[15px] sm:text-sm";
-const NONE = "none"; // 履歴書を選ばない
-
-export const stepLabel = (s: Step) => (s.kind === "その他" ? s.name?.trim() || "その他" : s.kind);
-
-// 選考の記録は日付の順。日付の無いものは後ろに、足した順で並ぶ（sort は並びを崩さない）
-export const sortSteps = (steps: Step[] = []) => [...steps].sort((a, b) => (a.date || "9").localeCompare(b.date || "9"));
-
-export function dateLabel(date: string) {
-  const [y, m, d] = date.split("-").map(Number);
-  const day = new Date(y, m - 1, d);
-  const md = `${m}月${d}日（${"日月火水木金土"[day.getDay()]}）`;
-  return y === new Date().getFullYear() ? md : `${y}年${md}`;
-}
-
-/** 今日以降で一番近い日付の記録（次の予定）。次の予定日は別に持たず、ここから出す */
-export const upcoming = (steps?: Step[]) => {
-  const today = new Date().toLocaleDateString("sv-SE"); // "2026-11-04"
-  return sortSteps(steps).find((s) => s.date && s.date >= today);
-};
 
 // 終わったものは下へ。ほかは次の予定が近い順（予定の無いものはその後ろ）、同じなら更新が新しい順
 // "9" は どの日付（"2026-…"）よりも後ろに並ぶ
 const nextDate = (a: Application) => upcoming(a.steps)?.date || "9";
 const order = (a: Application, b: Application) =>
   Number(a.status === "終了") - Number(b.status === "終了") || nextDate(a).localeCompare(nextDate(b)) || b.updatedAt - a.updatedAt;
-
-/** 応募先を追加・編集する画面。app が無ければ新しく作る。onSaved には保存した id が渡る。onDelete を渡すと削除ボタンを出す */
-export function ApplicationSheet({ app, onClose, onSaved, onDelete }: {
-  app?: Application;
-  onClose: () => void;
-  onSaved?: (id: string) => void;
-  onDelete?: () => void;
-}) {
-  const id = useId();
-  const resumes = useResumeList();
-  const [form, setForm] = useState<ApplicationInput>(() => app ?? { company: "", status: "応募前" });
-  const set = (patch: Partial<ApplicationInput>) => setForm((f) => ({ ...f, ...patch }));
-  const company = form.company.trim();
-  const items = [{ value: NONE, label: "選ばない" }, ...resumes.map((r) => ({ value: r.id, label: r.title }))];
-  const linked = resumes.some((r) => r.id === form.resume);
-
-  const save = () => {
-    if (!company) return;
-    const id = saveApplication({ ...form, company }, app?.id);
-    onClose();
-    onSaved?.(id);
-  };
-
-  return (
-    <EditSheet
-      open
-      onOpenChange={(open) => !open && onClose()}
-      title={app ? "応募先を編集" : "応募先を追加"}
-      footer={
-        <>
-          {onDelete && (
-            <Button variant="ghost" size="icon" className="mr-auto size-11 text-destructive hover:text-destructive sm:size-9" aria-label="削除" onClick={onDelete}>
-              <Trash2 />
-            </Button>
-          )}
-          <Button variant="ghost" className="h-11 sm:h-9" onClick={onClose}>
-            やめる
-          </Button>
-          <Button className="h-11 flex-1 sm:h-9 sm:flex-none" disabled={!company} onClick={save}>
-            保存
-          </Button>
-        </>
-      }
-    >
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          save();
-        }}
-      >
-        <FieldGroup className="gap-5">
-          <Field>
-            <FieldLabel htmlFor={`${id}-company`} className={LABEL}>
-              応募先
-            </FieldLabel>
-            <Input id={`${id}-company`} value={form.company} onChange={(e) => set({ company: e.target.value })} placeholder="例：○○株式会社" autoFocus={!app} />
-          </Field>
-          <Field>
-            <FieldTitle className={LABEL}>状態</FieldTitle>
-            <ToggleGroup variant="outline" value={[form.status]} onValueChange={(v) => v[0] && set({ status: v[0] as Status })} aria-label="状態" className="flex-wrap">
-              {STATUSES.map((s) => (
-                <ToggleGroupItem key={s} value={s} className="h-11 px-3 sm:h-8 aria-pressed:border-primary/40 aria-pressed:bg-primary/10 aria-pressed:text-primary">
-                  {s}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor={`${id}-resume`} className={LABEL}>
-              使った履歴書
-            </FieldLabel>
-            <Select items={items} value={linked ? form.resume : NONE} onValueChange={(v) => set({ resume: v === NONE ? undefined : (v as string) })}>
-              <SelectTrigger id={`${id}-resume`} className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {items.map((i) => (
-                  <SelectItem key={i.value} value={i.value}>
-                    {i.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {linked && (
-              <FieldDescription>
-                <Link href={editHref(form.resume!)} className="underline underline-offset-2">
-                  この履歴書を開く
-                </Link>
-              </FieldDescription>
-            )}
-          </Field>
-          <Field>
-            <FieldLabel htmlFor={`${id}-memo`} className={LABEL}>
-              会社についてのメモ
-            </FieldLabel>
-            <Textarea id={`${id}-memo`} value={form.memo ?? ""} onChange={(e) => set({ memo: e.target.value || undefined })} placeholder="社風、志望理由の材料など" />
-            {!app && <FieldDescription>面接ごとのメモは、保存したあとの「選考の記録」に書きます。</FieldDescription>}
-          </Field>
-        </FieldGroup>
-      </form>
-    </EditSheet>
-  );
-}
 
 /** 選考管理（/app/applications/） */
 export function ApplicationList() {
@@ -195,12 +63,7 @@ export function ApplicationList() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex h-14 w-full max-w-3xl items-center gap-3 px-4 sm:px-6">
-          <Brand />
-          <HeaderTabs />
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-4 pt-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-6 lg:pb-6">
         <div className="flex min-h-11 items-center justify-between gap-3 sm:min-h-9">

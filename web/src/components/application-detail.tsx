@@ -23,16 +23,20 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { HeaderTabs } from "@/components/app-tabs";
-import { ApplicationSheet, dateLabel, sortSteps, stepLabel, upcoming } from "@/components/application-list";
+import { AppHeader } from "@/components/app-tabs";
+import { ApplicationSheet } from "@/components/application-sheet";
 import { DateField } from "@/components/date-field";
-import { Brand } from "@/components/site";
 import {
+  dateLabel,
   deleteApplication,
   editHref,
   newStepId,
+  sortSteps,
   STATUSES,
   STEP_KINDS,
+  stepLabel,
+  today,
+  upcoming,
   updateApplication,
   useApplications,
   useLoaded,
@@ -121,9 +125,9 @@ function Detail({ app }: { app: Application }) {
 
   const addStep = () => {
     const id = newStepId();
-    const today = new Date().toLocaleDateString("sv-SE"); // "2026-11-04"（面接の直後に書く人が多いので今日にしておく）
+    // 日付は今日にしておく（面接の直後に書く人が多いため）
     update((d) => {
-      d.steps = [...(d.steps ?? []), { id, kind: nextKind(d.steps?.at(-1)?.kind), date: today, memo: "" }];
+      d.steps = [...(d.steps ?? []), { id, kind: nextKind(d.steps?.at(-1)?.kind), date: today(), memo: "" }];
     });
     setAdded(id);
   };
@@ -133,11 +137,17 @@ function Detail({ app }: { app: Application }) {
       if (s) Object.assign(s, patch);
     });
   const removeStep = (id: string) => {
-    const before = app.steps;
+    const removed = all.find((s) => s.id === id);
+    if (!removed) return;
     update((d) => {
       d.steps = d.steps?.filter((s) => s.id !== id);
     });
-    toast("記録を削除しました", { action: { label: "元に戻す", onClick: () => update((d) => void (d.steps = before)) } });
+    // 戻すのは消した1件だけ（その間にほかの記録へ書いた内容は残す）。並びは元の位置に戻る
+    const restore = () =>
+      update((d) => {
+        if (!d.steps?.some((s) => s.id === id)) d.steps = [...(d.steps ?? []), removed];
+      });
+    toast("記録を削除しました", { action: { label: "元に戻す", onClick: restore } });
   };
 
   return (
@@ -156,7 +166,7 @@ function Detail({ app }: { app: Application }) {
               <DropdownMenuTrigger
                 render={
                   <Button
-                    variant={app.status === "内定" ? "default" : "secondary"}
+                    variant={app.status === "内定" ? "default" : "outline"}
                     size="sm"
                     className="h-9 rounded-full sm:h-7"
                     aria-label={`状態：${app.status}（押すと変えられます）`}
@@ -191,7 +201,7 @@ function Detail({ app }: { app: Application }) {
               </span>
             )}
             {resume && (
-              <Link href={editHref(resume.id)} className="inline-flex items-center gap-1 underline underline-offset-2">
+              <Link href={editHref(resume.id, app.id)} className="inline-flex items-center gap-1 underline underline-offset-2">
                 <FileText className="size-4" aria-hidden />
                 {resume.title}
               </Link>
@@ -292,12 +302,7 @@ export function ApplicationDetail() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex h-14 w-full max-w-3xl items-center gap-3 px-4 sm:px-6">
-          <Brand />
-          <HeaderTabs />
-        </div>
-      </header>
+      <AppHeader />
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6">
         {app ? (
           <Detail key={app.id} app={app} />
