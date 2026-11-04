@@ -208,9 +208,25 @@ export const useLoaded = () => useSyncExternalStore(noop, () => true, () => fals
 // 選考管理。応募先ごとに1件。履歴書とは別のキーに持ち、使った履歴書は id でつなぐ
 export const STATUSES = ["応募前", "書類選考", "面接", "内定", "終了"] as const;
 export type Status = (typeof STATUSES)[number];
-// resume：使った履歴書の id。date：次の予定日（"2026-11-10"）
-export type Application = { id: string; company: string; status: Status; resume?: string; date?: string; memo?: string; updatedAt: number };
+// 選考の記録（面接・面談ごとに1件）。name：種類が「その他」のときの名前
+export const STEP_KINDS = ["カジュアル面談", "一次面接", "二次面接", "最終面接", "その他"] as const;
+export type StepKind = (typeof STEP_KINDS)[number];
+export type Step = { id: string; kind: StepKind; name?: string; date?: string; memo: string };
+// resume：使った履歴書の id。date：次の予定日（"2026-11-10"）。memo：会社についてのメモ
+export type Application = {
+  id: string;
+  company: string;
+  status: Status;
+  resume?: string;
+  date?: string;
+  memo?: string;
+  steps?: Step[];
+  updatedAt: number;
+};
 export type ApplicationInput = Omit<Application, "id" | "updatedAt">;
+
+export const applicationHref = (id: string) => `/app/applications/detail/?id=${id}`;
+export const newStepId = newId;
 
 const APPS_KEY = "career-hub:applications";
 const SERVER_APPS: Application[] = [];
@@ -235,11 +251,34 @@ function setApps(next: Application[]) {
   notify();
 }
 
-/** 応募先を保存する。id があれば書き換え、無ければ追加する */
+/** 応募先を保存して id を返す。id があれば書き換え、無ければ追加する */
 export function saveApplication(data: ApplicationInput, id = newId()) {
   const app = { ...data, id, updatedAt: Date.now() };
   const list = getApps();
   setApps(list.some((a) => a.id === id) ? list.map((a) => (a.id === id ? app : a)) : [...list, app]);
+  return id;
+}
+
+/** 一部だけ書き換える（選考の記録の入力ごとに呼ぶ）。fn には複製が渡るので、そのまま書き換えてよい */
+export function updateApplication(id: string, fn: (draft: Application) => void) {
+  setApps(
+    getApps().map((a) => {
+      if (a.id !== id) return a;
+      const draft = structuredClone(a);
+      fn(draft);
+      return { ...draft, updatedAt: Date.now() };
+    }),
+  );
+}
+
+/** 書き出したファイルを読み込む。同じ id は読み込んだ内容で置き換え、ほかは足す。読み込んだ件数を返す */
+export function importApplications(data: unknown) {
+  if (!Array.isArray(data) || !data.every((a) => typeof a?.id === "string" && typeof a.company === "string" && STATUSES.includes(a.status)))
+    throw new Error("選考管理のファイルではありません");
+  const incoming = data as Application[];
+  const ids = new Set(incoming.map((a) => a.id));
+  setApps([...getApps().filter((a) => !ids.has(a.id)), ...incoming]);
+  return incoming.length;
 }
 
 export function deleteApplication(id: string) {

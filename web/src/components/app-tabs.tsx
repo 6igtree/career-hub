@@ -13,7 +13,9 @@ const TABS = [
 
 function useCurrent() {
   const path = usePathname();
-  return (href: string) => path.replace(/\/?$/, "/") === href;
+  const current = path.replace(/\/?$/, "/");
+  // 選考管理は、応募先の詳しいページ（/app/applications/detail/）でも選んだ状態にする
+  return (href: string) => (href === "/app/" ? current === href : current.startsWith(href));
 }
 
 /** パソコン：ヘッダーの右で切り替える */

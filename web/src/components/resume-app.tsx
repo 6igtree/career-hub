@@ -45,12 +45,7 @@ import { ResumeForm } from "@/components/resume-form";
 import { FormCredit } from "@/components/site";
 import { documentDate, emptyResume, layoutResume, loadAssets, makePdf, missingChars, SAMPLE, type Assets, type Resume } from "@/lib/resume";
 import { openResume, setResume, useResume, useResumeList } from "@/lib/store";
-
-function download(blob: Blob, name: string) {
-  const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: name });
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-}
+import { download } from "@/lib/utils";
 
 /** スマホでは共有メニューを出し、使えなければダウンロードする */
 async function deliver(pdf: Uint8Array, name: string) {
