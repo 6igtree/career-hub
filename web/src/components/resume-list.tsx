@@ -243,7 +243,8 @@ export function ResumeList() {
   async function importFile(file: File | undefined) {
     if (!file) return;
     try {
-      createResume(toResume(JSON.parse(await file.text())), file.name.replace(/\.json$/i, "") || undefined, folder?.id);
+      const raw = JSON.parse(await file.text());
+      createResume(toResume(raw), file.name.replace(/\.json$/i, "") || undefined, folder?.id, typeof raw?.id === "string" ? raw.id : undefined);
       toast.success("読み込みました");
     } catch {
       toast.error("このファイルは読み込めませんでした", { description: "書き出した JSON ファイルを選んでください" });

@@ -18,12 +18,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { BottomTabs, HeaderTabs } from "@/components/app-tabs";
-import { DateField } from "@/components/date-field";
 import { EditSheet } from "@/components/edit-sheet";
 import { Brand } from "@/components/site";
 import {
   applicationHref,
-  deleteApplication,
   editHref,
   importApplications,
   saveApplication,
@@ -53,13 +51,25 @@ export function dateLabel(date: string) {
   return y === new Date().getFullYear() ? md : `${y}年${md}`;
 }
 
+/** 今日以降で一番近い日付の記録（次の予定）。次の予定日は別に持たず、ここから出す */
+export const upcoming = (steps?: Step[]) => {
+  const today = new Date().toLocaleDateString("sv-SE"); // "2026-11-04"
+  return sortSteps(steps).find((s) => s.date && s.date >= today);
+};
+
 // 終わったものは下へ。ほかは次の予定が近い順（予定の無いものはその後ろ）、同じなら更新が新しい順
 // "9" は どの日付（"2026-…"）よりも後ろに並ぶ
+const nextDate = (a: Application) => upcoming(a.steps)?.date || "9";
 const order = (a: Application, b: Application) =>
-  Number(a.status === "終了") - Number(b.status === "終了") || (a.date || "9").localeCompare(b.date || "9") || b.updatedAt - a.updatedAt;
+  Number(a.status === "終了") - Number(b.status === "終了") || nextDate(a).localeCompare(nextDate(b)) || b.updatedAt - a.updatedAt;
 
-/** 応募先を追加・編集する画面。app が無ければ新しく作る。onSaved には保存した id が渡る */
-export function ApplicationSheet({ app, onClose, onSaved }: { app?: Application; onClose: () => void; onSaved?: (id: string) => void }) {
+/** 応募先を追加・編集する画面。app が無ければ新しく作る。onSaved には保存した id が渡る。onDelete を渡すと削除ボタンを出す */
+export function ApplicationSheet({ app, onClose, onSaved, onDelete }: {
+  app?: Application;
+  onClose: () => void;
+  onSaved?: (id: string) => void;
+  onDelete?: () => void;
+}) {
   const id = useId();
   const resumes = useResumeList();
   const [form, setForm] = useState<ApplicationInput>(() => app ?? { company: "", status: "応募前" });
@@ -74,13 +84,6 @@ export function ApplicationSheet({ app, onClose, onSaved }: { app?: Application;
     onClose();
     onSaved?.(id);
   };
-  const remove = () => {
-    if (!app) return;
-    deleteApplication(app.id);
-    onClose();
-    // 消したものは、すぐなら戻せる
-    toast("削除しました", { action: { label: "元に戻す", onClick: () => saveApplication(app, app.id) } });
-  };
 
   return (
     <EditSheet
@@ -89,8 +92,8 @@ export function ApplicationSheet({ app, onClose, onSaved }: { app?: Application;
       title={app ? "応募先を編集" : "応募先を追加"}
       footer={
         <>
-          {app && (
-            <Button variant="ghost" size="icon" className="mr-auto size-11 text-destructive hover:text-destructive sm:size-9" aria-label="削除" onClick={remove}>
+          {onDelete && (
+            <Button variant="ghost" size="icon" className="mr-auto size-11 text-destructive hover:text-destructive sm:size-9" aria-label="削除" onClick={onDelete}>
               <Trash2 />
             </Button>
           )}
@@ -127,12 +130,6 @@ export function ApplicationSheet({ app, onClose, onSaved }: { app?: Application;
             </ToggleGroup>
           </Field>
           <Field>
-            <FieldLabel htmlFor={`${id}-date`} className={LABEL}>
-              次の予定日
-            </FieldLabel>
-            <DateField id={`${id}-date`} value={form.date ?? ""} onChange={(date) => set({ date: date || undefined })} placeholder="面接日・締切日など" clearLabel="日付を消す" />
-          </Field>
-          <Field>
             <FieldLabel htmlFor={`${id}-resume`} className={LABEL}>
               使った履歴書
             </FieldLabel>
@@ -161,7 +158,7 @@ export function ApplicationSheet({ app, onClose, onSaved }: { app?: Application;
               会社についてのメモ
             </FieldLabel>
             <Textarea id={`${id}-memo`} value={form.memo ?? ""} onChange={(e) => set({ memo: e.target.value || undefined })} placeholder="社風、志望理由の材料など" />
-            <FieldDescription>面接ごとのメモは、保存したあとの「選考の記録」に書きます。</FieldDescription>
+            {!app && <FieldDescription>面接ごとのメモは、保存したあとの「選考の記録」に書きます。</FieldDescription>}
           </Field>
         </FieldGroup>
       </form>
@@ -249,7 +246,7 @@ export function ApplicationList() {
               <EmptyTitle>まだ応募先がありません</EmptyTitle>
               <EmptyDescription>
                 <span className="inline-block">応募先ごとに、選考の状態と</span>
-                <span className="inline-block">次の予定を書いておけます。</span>
+                <span className="inline-block">面接ごとのメモを残せます。</span>
               </EmptyDescription>
             </EmptyHeader>
             <EmptyContent>{addButton("w-full px-5 text-base sm:w-auto sm:text-sm")}</EmptyContent>
@@ -260,7 +257,9 @@ export function ApplicationList() {
               {sorted.map((a) => {
                 const resume = resumes.find((r) => r.id === a.resume);
                 const ended = a.status === "終了";
-                const latest = sortSteps(a.steps).at(-1);
+                // これからの予定があればそれを、無ければ最後の記録を出す
+                const next = ended ? undefined : upcoming(a.steps);
+                const latest = next ? undefined : sortSteps(a.steps).at(-1);
                 return (
                   <Item key={a.id} variant="outline" className={cn("relative bg-card hover:bg-muted/60", ended && "opacity-60")}>
                     <ItemContent className="wrap-anywhere">
@@ -274,19 +273,19 @@ export function ApplicationList() {
                         </Link>
                         <Badge variant={a.status === "内定" ? "default" : "secondary"}>{a.status}</Badge>
                       </ItemTitle>
-                      {(a.date || resume || latest) && (
+                      {(next || resume || latest) && (
                         <ItemDescription className="flex flex-wrap gap-x-3">
+                          {next && (
+                            <span className="inline-flex items-center gap-1 text-foreground">
+                              <CalendarDays className="size-3.5" aria-hidden />
+                              次：{stepLabel(next)}・{dateLabel(next.date!)}
+                            </span>
+                          )}
                           {latest && (
                             <span className="inline-flex items-center gap-1">
                               <ListChecks className="size-3.5" aria-hidden />
                               {stepLabel(latest)}
                               {latest.date && `・${dateLabel(latest.date)}`}
-                            </span>
-                          )}
-                          {a.date && !ended && (
-                            <span className="inline-flex items-center gap-1">
-                              <CalendarDays className="size-3.5" aria-hidden />
-                              {dateLabel(a.date)}
                             </span>
                           )}
                           {resume && (
