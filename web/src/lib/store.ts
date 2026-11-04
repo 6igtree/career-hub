@@ -200,3 +200,52 @@ export function useResumeList() {
 export function useFolders() {
   return useSyncExternalStore(subscribe, getFolders, () => SERVER_FOLDERS);
 }
+
+// 保存内容はブラウザにしかないので、読み込むまで一覧を出さない（空の案内のちらつき防止）
+const noop = () => () => {};
+export const useLoaded = () => useSyncExternalStore(noop, () => true, () => false);
+
+// 選考管理。応募先ごとに1件。履歴書とは別のキーに持ち、使った履歴書は id でつなぐ
+export const STATUSES = ["応募前", "書類選考", "面接", "内定", "終了"] as const;
+export type Status = (typeof STATUSES)[number];
+// resume：使った履歴書の id。date：次の予定日（"2026-11-10"）
+export type Application = { id: string; company: string; status: Status; resume?: string; date?: string; memo?: string; updatedAt: number };
+export type ApplicationInput = Omit<Application, "id" | "updatedAt">;
+
+const APPS_KEY = "career-hub:applications";
+const SERVER_APPS: Application[] = [];
+let apps: Application[] | null = null;
+
+function getApps(): Application[] {
+  if (!apps) {
+    apps = [];
+    try {
+      const saved = localStorage.getItem(APPS_KEY);
+      if (saved) apps = JSON.parse(saved);
+    } catch {
+      // 読めないときは空から始める
+    }
+  }
+  return apps!;
+}
+
+function setApps(next: Application[]) {
+  apps = next;
+  write(APPS_KEY, next);
+  notify();
+}
+
+/** 応募先を保存する。id があれば書き換え、無ければ追加する */
+export function saveApplication(data: ApplicationInput, id = newId()) {
+  const app = { ...data, id, updatedAt: Date.now() };
+  const list = getApps();
+  setApps(list.some((a) => a.id === id) ? list.map((a) => (a.id === id ? app : a)) : [...list, app]);
+}
+
+export function deleteApplication(id: string) {
+  setApps(getApps().filter((a) => a.id !== id));
+}
+
+export function useApplications() {
+  return useSyncExternalStore(subscribe, getApps, () => SERVER_APPS);
+}
