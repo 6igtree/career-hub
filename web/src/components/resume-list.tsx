@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Copy, FileText, FileUp, Folder as FolderIcon, FolderCog, FolderInput, FolderOpen, FolderPlus, MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
@@ -38,6 +38,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { EditSheet } from "@/components/edit-sheet";
 import { NameSheet, RenameSheet } from "@/components/rename-sheet";
+import { BottomTabs, HeaderTabs } from "@/components/app-tabs";
 import { Brand } from "@/components/site";
 import { SAMPLE, sectionStatus, toResume, type Resume } from "@/lib/resume";
 import {
@@ -51,14 +52,11 @@ import {
   moveResume,
   renameFolder,
   useFolders,
+  useLoaded,
   useResumeList,
   type Folder,
   type Saved,
 } from "@/lib/store";
-
-// 保存内容はブラウザにしかないので、読み込むまで一覧を出さない（空の案内のちらつき防止）
-const noop = () => () => {};
-const useLoaded = () => useSyncExternalStore(noop, () => true, () => false);
 
 // 開いているフォルダ。編集から戻っても同じフォルダが開くよう、このタブの間だけ覚える
 const ALL = "all";
@@ -257,10 +255,11 @@ export function ResumeList() {
       <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 w-full max-w-3xl items-center gap-3 px-4 sm:px-6">
           <Brand />
+          <HeaderTabs />
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-4 py-6 sm:px-6">
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-4 pt-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-6 lg:pb-6">
         <div className="flex min-h-11 items-center justify-between gap-3 sm:min-h-9">
           <h1 className="text-lg font-semibold">保存した履歴書</h1>
           {loaded && list.length > 0 && (
@@ -404,8 +403,9 @@ export function ResumeList() {
           </>
         )}
       </main>
+      <BottomTabs />
 
-      {renaming && <RenameSheet id={renaming.id} title={renaming.title} onClose={() => setRenaming(null)} />}
+      {renaming &&<RenameSheet id={renaming.id} title={renaming.title} onClose={() => setRenaming(null)} />}
 
       {naming && (
         <NameSheet
