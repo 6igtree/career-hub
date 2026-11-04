@@ -3,29 +3,42 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarDays, ChevronLeft, FileText, ListChecks, Pencil, Plus, Trash2 } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronLeft, FileText, ListChecks, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
-import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { HeaderTabs } from "@/components/app-tabs";
-import { ApplicationSheet, dateLabel, sortSteps, stepLabel } from "@/components/application-list";
+import { ApplicationSheet, dateLabel, sortSteps, stepLabel, upcoming } from "@/components/application-list";
 import { DateField } from "@/components/date-field";
 import { Brand } from "@/components/site";
 import {
+  deleteApplication,
   editHref,
   newStepId,
+  STATUSES,
   STEP_KINDS,
   updateApplication,
   useApplications,
   useLoaded,
   useResumeList,
   type Application,
+  type Status,
   type Step,
   type StepKind,
 } from "@/lib/store";
@@ -95,9 +108,15 @@ function StepCard({ step, autoFocus, onChange, onRemove }: {
 function Detail({ app }: { app: Application }) {
   const resumes = useResumeList();
   const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [added, setAdded] = useState<string | null>(null); // 足したばかりの記録（メモに入力欄を合わせる）
+  // 並びは開いたときに日付順で決め、このページにいる間は変えない（日付を直した記録が目の前から動かないように）。
+  // 足した記録は後ろに付く
+  const [order] = useState(() => sortSteps(app.steps).map((s) => s.id));
+  const all = app.steps ?? [];
+  const steps = [...order.flatMap((id) => all.filter((s) => s.id === id)), ...all.filter((s) => !order.includes(s.id))];
   const resume = resumes.find((r) => r.id === app.resume);
-  const steps = sortSteps(app.steps);
+  const next = upcoming(app.steps);
   const update = (fn: (draft: Application) => void) => updateApplication(app.id, fn);
 
   const addStep = () => {
@@ -130,21 +149,45 @@ function Detail({ app }: { app: Application }) {
 
       <section className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
-          <h1 className="flex flex-wrap items-center gap-2 text-xl font-semibold wrap-anywhere">
-            {app.company}
-            <Badge variant={app.status === "内定" ? "default" : "secondary"}>{app.status}</Badge>
-          </h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-xl font-semibold wrap-anywhere">{app.company}</h1>
+            {/* 状態はここで直接変える（記録を足しても自動では変わらないため、すぐ直せるように） */}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant={app.status === "内定" ? "default" : "secondary"}
+                    size="sm"
+                    className="h-9 rounded-full sm:h-7"
+                    aria-label={`状態：${app.status}（押すと変えられます）`}
+                  />
+                }
+              >
+                {app.status}
+                <ChevronDown data-icon="inline-end" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-44 sm:w-36">
+                <DropdownMenuRadioGroup value={app.status} onValueChange={(v) => update((d) => void (d.status = v as Status))}>
+                  {STATUSES.map((s) => (
+                    <DropdownMenuRadioItem key={s} value={s} closeOnClick>
+                      {s}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           <Button variant="outline" className="h-11 shrink-0 sm:h-9" onClick={() => setEditing(true)}>
             <Pencil data-icon="inline-start" />
             編集
           </Button>
         </div>
-        {(app.date || resume) && (
+        {(next || resume) && (
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-            {app.date && (
-              <span className="inline-flex items-center gap-1">
+            {next && (
+              <span className="inline-flex items-center gap-1 text-foreground">
                 <CalendarDays className="size-4" aria-hidden />
-                次の予定：{dateLabel(app.date)}
+                次の予定：{stepLabel(next)}・{dateLabel(next.date!)}
               </span>
             )}
             {resume && (
@@ -197,7 +240,41 @@ function Detail({ app }: { app: Application }) {
         <p className="text-xs text-muted-foreground">入力した内容は、この端末のブラウザにすぐ保存されます。</p>
       </section>
 
-      {editing && <ApplicationSheet app={app} onClose={() => setEditing(false)} />}
+      {editing && (
+        <ApplicationSheet
+          app={app}
+          onClose={() => setEditing(false)}
+          onDelete={() => {
+            // 編集画面を閉じてから確認を出す（画面を重ねない）
+            setEditing(false);
+            setDeleting(true);
+          }}
+        />
+      )}
+
+      <AlertDialog open={deleting} onOpenChange={setDeleting}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>「{app.company}」を削除しますか？</AlertDialogTitle>
+            <AlertDialogDescription>
+              {all.length > 0 ? `面接の記録${all.length}件も消え、元に戻せません。` : "元に戻せません。"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="h-11 sm:h-9">やめる</AlertDialogCancel>
+            <AlertDialogAction
+              className="h-11 sm:h-9"
+              variant="destructive"
+              onClick={() => {
+                deleteApplication(app.id); // 見つからなくなるので、一覧へ戻る
+                toast("削除しました");
+              }}
+            >
+              削除する
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
@@ -223,7 +300,7 @@ export function ApplicationDetail() {
       </header>
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6">
         {app ? (
-          <Detail app={app} />
+          <Detail key={app.id} app={app} />
         ) : (
           <div className="flex flex-col gap-3">
             <Skeleton className="h-10 w-1/2" />

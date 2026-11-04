@@ -114,9 +114,10 @@ export function updateResume(fn: (draft: Resume) => void) {
   setResume(draft);
 }
 
-/** 新しく作って id を返す。folder を渡すとそのフォルダに入れる */
-export function createResume(data: Resume = emptyResume(), title = nextTitle(), folder?: string) {
-  const id = newId();
+/** 新しく作って id を返す。folder を渡すとそのフォルダに入れる。
+ *  keepId：読み込んだファイルにあった id。空いていれば使う（選考管理の「使った履歴書」のつながりを保つため） */
+export function createResume(data: Resume = emptyResume(), title = nextTitle(), folder?: string, keepId?: string) {
+  const id = keepId && !getList().some((s) => s.id === keepId) ? keepId : newId();
   cache.set(id, data);
   write(resumeKey(id), data);
   setList([...getList(), { id, title, updatedAt: Date.now(), folder }]);
@@ -212,13 +213,12 @@ export type Status = (typeof STATUSES)[number];
 export const STEP_KINDS = ["カジュアル面談", "一次面接", "二次面接", "最終面接", "その他"] as const;
 export type StepKind = (typeof STEP_KINDS)[number];
 export type Step = { id: string; kind: StepKind; name?: string; date?: string; memo: string };
-// resume：使った履歴書の id。date：次の予定日（"2026-11-10"）。memo：会社についてのメモ
+// resume：使った履歴書の id。memo：会社についてのメモ。次の予定は、記録の日付から出す
 export type Application = {
   id: string;
   company: string;
   status: Status;
   resume?: string;
-  date?: string;
   memo?: string;
   steps?: Step[];
   updatedAt: number;

@@ -151,7 +151,8 @@ function Editor({ id }: { id: string }) {
   }
 
   function exportData() {
-    download(new Blob([JSON.stringify(resume, null, 2)], { type: "application/json" }), `${title}.json`);
+    // id も入れておく（読み込んだ先でも、選考管理の「使った履歴書」とつながるように）
+    download(new Blob([JSON.stringify({ id, ...resume }, null, 2)], { type: "application/json" }), `${title}.json`);
     toast.success("データを書き出しました", { description: "別の端末では、一覧の「ファイルから読み込む」で続きを書けます" });
   }
 
