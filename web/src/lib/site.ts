@@ -5,4 +5,4 @@ export const SITE_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
 
 export const SITE_TITLE = "厚生労働省様式の履歴書を無料で作成・PDF保存｜ResumeDocs";
 export const SITE_DESCRIPTION =
-  "厚生労働省の履歴書様式例どおりの履歴書を、ブラウザで入力するだけで作成し、PDF で保存できます。無料・登録不要でスマホにも対応。入力内容は外部に送信しません。";
+  "厚生労働省の履歴書様式例どおりの履歴書を、ブラウザで入力するだけで作成し、PDF で保存できます。無料・登録不要でスマホにも対応。入力内容は外部に送信しません。応募先ごとの選考の進み具合や面接のメモも残せます。";
