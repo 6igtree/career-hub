@@ -294,20 +294,59 @@ export function updateApplication(id: string, fn: (draft: Application) => void) 
   );
 }
 
-/** 書き出したファイルを読み込む。同じ id は読み込んだ内容で置き換え、ほかは足す。読み込んだ件数を返す */
-export function importApplications(data: unknown) {
-  if (!Array.isArray(data) || !data.every((a) => typeof a?.id === "string" && typeof a.company === "string" && STATUSES.includes(a.status)))
-    throw new Error("選考管理のファイルではありません");
-  const incoming = data as Application[];
-  const ids = new Set(incoming.map((a) => a.id));
-  setApps([...getApps().filter((a) => !ids.has(a.id)), ...incoming]);
-  return incoming.length;
-}
-
 export function deleteApplication(id: string) {
   setApps(getApps().filter((a) => a.id !== id));
 }
 
 export function useApplications() {
   return useSyncExternalStore(subscribe, getApps, () => SERVER_APPS);
+}
+
+// ---- バックアップ（履歴書・フォルダ・選考管理をまとめて1つのファイルに） ----
+
+type Backup = { app: "ResumeDocs"; version: 1; resumes: (Saved & { data: Resume })[]; folders: Folder[]; applications: Application[] };
+
+export function backup(): Backup {
+  return { app: "ResumeDocs", version: 1, resumes: getList().map((s) => ({ ...s, data: getResume(s.id) })), folders: getFolders(), applications: getApps() };
+}
+
+// 同じ id があれば、更新日時が新しいほうを残す（古いバックアップで最近の入力を消さないように）
+const isNewer = (incoming: { updatedAt?: unknown }, mine?: { updatedAt: number }) => !mine || Number(incoming.updatedAt) > mine.updatedAt;
+
+/** バックアップを読み込み、足したり新しくしたりした件数を返す。
+ *  前の版で書き出した、履歴書1件だけのファイル・選考管理だけのファイルも読める（title：履歴書1件のときの名前） */
+export function restore(data: unknown, title?: string) {
+  if (!data || typeof data !== "object") throw new Error("読み込めないファイルです");
+  const d = data as Partial<Backup>;
+  const isOldApps = Array.isArray(data);
+  if (!isOldApps && !Array.isArray(d.resumes)) {
+    const id = (data as { id?: unknown }).id;
+    createResume(toResume(data), title, undefined, typeof id === "string" ? id : undefined);
+    return { resumes: 1, applications: 0 };
+  }
+
+  const apps = (isOldApps ? data : d.applications ?? []) as Application[];
+  if (!apps.every((a) => typeof a?.id === "string" && typeof a.company === "string" && STATUSES.includes(a.status)))
+    throw new Error("選考管理のデータが読めません");
+  const resumes = (isOldApps ? [] : d.resumes!).filter((r) => typeof r?.id === "string");
+
+  const list = [...getList()];
+  const changed = resumes.filter((r) => isNewer(r, list.find((s) => s.id === r.id)));
+  for (const r of changed) {
+    const resume = toResume(r.data);
+    cache.set(r.id, resume);
+    write(resumeKey(r.id), resume);
+    const saved = { id: r.id, title: String(r.title || "履歴書"), updatedAt: Number(r.updatedAt) || Date.now(), folder: r.folder };
+    const i = list.findIndex((s) => s.id === r.id);
+    if (i < 0) list.push(saved);
+    else list[i] = saved;
+  }
+  const mine = getFolders();
+  const folders = (d.folders ?? []).filter((f) => typeof f?.id === "string" && !mine.some((m) => m.id === f.id));
+  const newApps = apps.filter((a) => isNewer(a, getApps().find((m) => m.id === a.id)));
+
+  setList(list);
+  setFolders([...mine, ...folders]);
+  setApps([...getApps().filter((a) => !newApps.some((n) => n.id === a.id)), ...newApps]);
+  return { resumes: changed.length, applications: newApps.length };
 }

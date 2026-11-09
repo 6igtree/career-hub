@@ -1,14 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarDays, ClipboardList, Download, FileText, ListChecks, MoreHorizontal, Plus, Upload } from "lucide-react";
-import { toast } from "sonner";
+import { CalendarDays, ClipboardList, FileText, ListChecks, Plus } from "lucide-react";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Item, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/components/ui/item";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,7 +15,6 @@ import { ApplicationSheet } from "@/components/application-sheet";
 import {
   applicationHref,
   dateLabel,
-  importApplications,
   sortSteps,
   stepLabel,
   upcoming,
@@ -26,7 +23,6 @@ import {
   useResumeList,
   type Application,
 } from "@/lib/store";
-import { download } from "@/lib/utils";
 
 // 終わったものは下へ。ほかは次の予定が近い順（予定の無いものはその後ろ）、同じなら更新が新しい順
 // "9" は どの日付（"2026-…"）よりも後ろに並ぶ
@@ -41,7 +37,6 @@ export function ApplicationList() {
   const resumes = useResumeList();
   const router = useRouter();
   const [adding, setAdding] = useState(false);
-  const importInput = useRef<HTMLInputElement>(null);
   const sorted = [...apps].sort(order);
 
   const addButton = (className?: string) => (
@@ -51,16 +46,6 @@ export function ApplicationList() {
     </Button>
   );
 
-  async function importFile(file: File | undefined) {
-    if (!file) return;
-    try {
-      const n = importApplications(JSON.parse(await file.text()));
-      toast.success(`${n}件を読み込みました`);
-    } catch {
-      toast.error("このファイルは読み込めませんでした", { description: "選考管理で書き出した JSON ファイルを選んでください" });
-    }
-  }
-
   return (
     <>
       <AppHeader />
@@ -68,32 +53,7 @@ export function ApplicationList() {
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-4 pt-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-6 lg:pb-6">
         <div className="flex min-h-11 items-center justify-between gap-3 sm:min-h-9">
           <h1 className="text-lg font-semibold">選考管理</h1>
-          {loaded && (
-            <div className="flex items-center gap-2">
-              {apps.length > 0 && addButton()}
-              <DropdownMenu>
-                <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="size-11 sm:size-9" aria-label="書き出しと読み込み" />}>
-                  <MoreHorizontal />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-60 sm:w-52">
-                  <DropdownMenuItem
-                    disabled={apps.length === 0}
-                    onClick={() => {
-                      download(new Blob([JSON.stringify(apps, null, 2)], { type: "application/json" }), "選考管理.json");
-                      toast.success("書き出しました", { description: "別の端末では、ここの「読み込む」で続きを使えます" });
-                    }}
-                  >
-                    <Download />
-                    書き出す
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => importInput.current?.click()}>
-                    <Upload />
-                    読み込む
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
+          {loaded && apps.length > 0 && addButton()}
         </div>
         {!loaded ? (
           <div className="flex flex-col gap-3">
@@ -172,17 +132,6 @@ export function ApplicationList() {
 
       {/* 追加したら、そのまま選考の記録を書けるよう詳しいページを開く */}
       {adding && <ApplicationSheet onClose={() => setAdding(false)} onSaved={(id) => router.push(applicationHref(id))} />}
-
-      <input
-        ref={importInput}
-        type="file"
-        accept="application/json,.json"
-        className="hidden"
-        onChange={(e) => {
-          importFile(e.target.files?.[0]);
-          e.target.value = "";
-        }}
-      />
     </>
   );
 }

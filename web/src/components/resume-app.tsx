@@ -17,7 +17,6 @@ import {
   Sparkles,
   Trash2,
   TriangleAlert,
-  Upload,
 } from "lucide-react";
 import { cn } from "cn";
 import { toast } from "sonner";
@@ -152,12 +151,6 @@ function Editor({ id, back }: { id: string; back: string }) {
     }
   }
 
-  function exportData() {
-    // id も入れておく（読み込んだ先でも、選考管理の「使った履歴書」とつながるように）
-    download(new Blob([JSON.stringify({ id, ...resume }, null, 2)], { type: "application/json" }), `${title}.json`);
-    toast.success("データを書き出しました", { description: "別の端末では、一覧の「ファイルから読み込む」で続きを書けます" });
-  }
-
   const status = !assets ? "準備中" : busy ? "更新中…" : "A4・2枚";
 
   return (
@@ -187,10 +180,6 @@ function Editor({ id, back }: { id: string; back: string }) {
                 <DropdownMenuItem onClick={() => setResume(structuredClone(SAMPLE))}>
                   <Sparkles />
                   見本を入れる
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={exportData}>
-                  <Upload />
-                  データを書き出す
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem variant="destructive" onClick={() => setConfirmReset(true)}>
