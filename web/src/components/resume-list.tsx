@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Copy, FileText, FileUp, Folder as FolderIcon, FolderCog, FolderInput, FolderOpen, FolderPlus, MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { ChevronDown, Copy, FileText, Folder as FolderIcon, FolderCog, FolderInput, FolderOpen, FolderPlus, MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import {
@@ -39,7 +39,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { EditSheet } from "@/components/edit-sheet";
 import { NameSheet, RenameSheet } from "@/components/rename-sheet";
 import { AppHeader, BottomTabs } from "@/components/app-tabs";
-import { SAMPLE, sectionStatus, toResume, type Resume } from "@/lib/resume";
+import { SAMPLE, sectionStatus, type Resume } from "@/lib/resume";
 import {
   createFolder,
   createResume,
@@ -81,7 +81,6 @@ const MENU = [
   { icon: FileText, title: "履歴書", text: "空の状態から書く" },
   { icon: Sparkles, title: "見本から", text: "見本の内容を入れて、書き換えて使う", sample: true },
   { icon: FolderPlus, title: "フォルダ", text: "応募先の種類などで履歴書を分ける" },
-  { icon: FileUp, title: "ファイルから読み込む", text: "書き出したファイルで続きを書く" },
 ];
 
 /** ▾ の中の1行。アイコン・名前・説明を並べる（shadcn の Item をメニューの中で使う形） */
@@ -215,7 +214,6 @@ export function ResumeList() {
   const [naming, setNaming] = useState<Naming | null>(null);
   const [deletingFolder, setDeletingFolder] = useState<Folder | null>(null);
   const [managing, setManaging] = useState(false);
-  const importInput = useRef<HTMLInputElement>(null);
   const folderBar = useRef<HTMLDivElement>(null);
   // 消したフォルダが開いたままにならないよう、無ければ「すべて」
   const folder = folders.find((f) => f.id === view);
@@ -238,17 +236,6 @@ export function ResumeList() {
       // 覚えられなくても切り替えはできる
     }
   };
-
-  async function importFile(file: File | undefined) {
-    if (!file) return;
-    try {
-      const raw = JSON.parse(await file.text());
-      createResume(toResume(raw), file.name.replace(/\.json$/i, "") || undefined, folder?.id, typeof raw?.id === "string" ? raw.id : undefined);
-      toast.success("読み込みました");
-    } catch {
-      toast.error("このファイルは読み込めませんでした", { description: "書き出した JSON ファイルを選んでください" });
-    }
-  }
 
   return (
     <>
@@ -278,7 +265,6 @@ export function ResumeList() {
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
                   <CreateItem {...MENU[2]} onClick={() => setNaming({ kind: "new" })} />
-                  <CreateItem {...MENU[3]} onClick={() => importInput.current?.click()} />
                 </DropdownMenuContent>
               </DropdownMenu>
             </ButtonGroup>
@@ -360,10 +346,6 @@ export function ResumeList() {
                 見本で試す
               </Button>
             </EmptyContent>
-            <Button variant="link" className="h-11 text-muted-foreground sm:h-9" onClick={() => importInput.current?.click()}>
-              <FileUp data-icon="inline-start" />
-              書き出したファイルを読み込む
-            </Button>
           </Empty>
         ) : shown.length === 0 ? (
           <Empty className="flex-none border bg-card">
@@ -393,7 +375,7 @@ export function ResumeList() {
               ))}
             </ItemGroup>
             <p className="text-xs text-muted-foreground">
-              この端末のブラウザに保存しています。別の端末で続けるときは、書き出したファイルを「新しく作る」の ▾ から読み込みます。
+              この端末のブラウザに保存しています。消えないよう、ときどき右上の「バックアップ」で書き出してください。
             </p>
           </>
         )}
@@ -521,17 +503,6 @@ export function ResumeList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <input
-        ref={importInput}
-        type="file"
-        accept="application/json,.json"
-        className="hidden"
-        onChange={(e) => {
-          importFile(e.target.files?.[0]);
-          e.target.value = "";
-        }}
-      />
     </>
   );
 }

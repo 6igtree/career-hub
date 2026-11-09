@@ -1,11 +1,16 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, FileText } from "lucide-react";
+import { ClipboardList, Download, FileText, HardDrive, Upload } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "cn";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Brand } from "@/components/site";
+import { backup, restore, today } from "@/lib/store";
+import { download } from "@/lib/utils";
 
 const TABS = [
   { href: "/app/", label: "履歴書", icon: FileText },
@@ -26,8 +31,62 @@ export function AppHeader() {
       <div className="mx-auto flex h-14 w-full max-w-3xl items-center gap-3 px-4 sm:px-6">
         <Brand />
         <HeaderTabs />
+        <BackupMenu />
       </div>
     </header>
+  );
+}
+
+/** 履歴書・フォルダ・選考管理をまとめて書き出す・読み込む */
+function BackupMenu() {
+  const input = useRef<HTMLInputElement>(null);
+
+  async function load(file: File | undefined) {
+    if (!file) return;
+    try {
+      const n = restore(JSON.parse(await file.text()), file.name.replace(/\.json$/i, "") || undefined);
+      const parts = [n.resumes && `履歴書${n.resumes}件`, n.applications && `応募先${n.applications}件`].filter(Boolean);
+      if (parts.length) toast.success(`${parts.join("・")}を読み込みました`);
+      else toast("この端末のほうが新しいので、変えませんでした");
+    } catch {
+      toast.error("このファイルは読み込めませんでした", { description: "書き出したバックアップ（JSON）を選んでください" });
+    }
+  }
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<Button variant="ghost" className="ml-auto h-11 text-muted-foreground sm:h-9 lg:ml-0" />}>
+          <HardDrive data-icon="inline-start" />
+          バックアップ
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-60 sm:w-52">
+          <DropdownMenuItem
+            onClick={() => {
+              download(new Blob([JSON.stringify(backup(), null, 2)], { type: "application/json" }), `ResumeDocs-${today()}.json`);
+              toast.success("書き出しました", { description: "別の端末では、ここの「読み込む」で続きを使えます" });
+            }}
+          >
+            <Download />
+            書き出す
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => input.current?.click()}>
+            <Upload />
+            読み込む
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <input
+        ref={input}
+        type="file"
+        accept="application/json,.json"
+        className="hidden"
+        onChange={(e) => {
+          load(e.target.files?.[0]);
+          e.target.value = "";
+        }}
+      />
+    </>
   );
 }
 
