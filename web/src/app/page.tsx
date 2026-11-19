@@ -142,6 +142,13 @@ export default function Page() {
               </Item>
             ))}
           </ItemGroup>
+          <p className="mt-6 leading-relaxed text-muted-foreground">
+            選考の進み具合や面接の記録については
+            <Link className="underline underline-offset-2" href="/tracker/">
+              選考管理
+            </Link>
+            のページで紹介しています。
+          </p>
         </section>
 
         <section aria-labelledby="steps" className="bg-card">
